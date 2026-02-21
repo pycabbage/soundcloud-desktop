@@ -1,18 +1,26 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "soundcloud-desktop",
+  "productName": "Soundcloud Desktop",
   "version": "0.1.0",
   "identifier": "com.10244.soundcloud-desktop",
   "build": {
-    "frontendDist": "../src"
+    "removeUnusedCommands": true
   },
   "app": {
-    "withGlobalTauri": true,
+    "withGlobalTauri": false,
+    "trayIcon": {
+      "id": "main",
+      "iconPath": "./icons/app-icon.png",
+      "iconAsTemplate": true,
+      "title": "Soundcloud Desktop",
+      "tooltip": "Soundcloud Desktop"
+    },
     "windows": [
       {
-        "title": "soundcloud-desktop",
-        "width": 800,
-        "height": 600
+        "title": "Soundcloud Desktop",
+        "width": 1200,
+        "height": 800,
+        "url": "https://soundcloud.com/discover"
       }
     ],
     "security": {
