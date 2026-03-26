@@ -4,7 +4,12 @@
   "version": "0.1.0",
   "identifier": "com.10244.soundcloud-desktop",
   "build": {
-    "removeUnusedCommands": true
+    "removeUnusedCommands": true,
+    "additionalWatchFolders": [
+      "../packages/inject"
+    ],
+    "beforeDevCommand": "cd packages/inject && bun run build",
+    "beforeBuildCommand": "cd packages/inject && bun run build"
   },
   "app": {
     "withGlobalTauri": false,

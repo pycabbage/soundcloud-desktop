@@ -7,12 +7,13 @@ const nativePlayer = getNativePlayer()
 const playManager = getPlayManager()
 
 interface IRequest {
-  id: number
+  requestId: number
 }
 listen<IRequest>("get-song-title", async (event) => {
   console.log("event", event)
   await invoke("song_title", {
-    id: event.payload.id,
+    requestId: event.payload.requestId,
     title: nativePlayer.currentTrack.title,
   })
 })
+console.log("inject script loaded")
