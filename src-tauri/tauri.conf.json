@@ -13,11 +13,13 @@
       "iconPath": "./icons/app-icon.png",
       "iconAsTemplate": true,
       "title": "Soundcloud Desktop",
-      "tooltip": "Soundcloud Desktop"
+      "tooltip": "Soundcloud Desktop",
+      "showMenuOnLeftClick": false
     },
     "windows": [
       {
         "title": "Soundcloud Desktop",
+        "create": false,
         "width": 1200,
         "height": 800,
         "url": "https://soundcloud.com/discover"
