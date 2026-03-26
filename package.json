@@ -1,0 +1,7 @@
+{
+  "name": "soundcloud-desktop",
+  "workspaces": [
+    "packages/*"
+  ],
+  "private": true
+}

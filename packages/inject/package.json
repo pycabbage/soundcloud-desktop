@@ -1,0 +1,19 @@
+{
+  "name": "@soundcloud-desktop/inject",
+  "private": true,
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "lint": "biome check"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.9"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.10.1"
+  }
+}
