@@ -9,17 +9,13 @@ struct PendingRequests(Mutex<HashMap<u32, oneshot::Sender<String>>>);
 #[tauri::command]
 async fn song_title(
     request_id: u32,
-    result: String,
+    title: String,
     pending: State<'_, PendingRequests>,
 ) -> Result<(), String> {
-    // implement later
     let mut map = pending.0.lock().await;
     if let Some(tx) = map.remove(&request_id) {
-        // print result
-        println!("Received result for request {}: {}", request_id, result);
-
-        // send result back to the waiting caller
-        let _ = tx.send(result);
+        println!("Received result for request {}: {}", request_id, title);
+        let _ = tx.send(title);
     }
     Ok(())
 }

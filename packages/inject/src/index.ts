@@ -15,5 +15,5 @@ listen<IRequest>("get-song-title", async (event) => {
     requestId: event.payload.requestId,
     title: nativePlayer.currentTrack.title,
   })
-})
+}).catch(console.error)
 console.log("inject script loaded")
