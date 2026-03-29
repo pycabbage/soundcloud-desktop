@@ -4,6 +4,8 @@
  * Module 196: PlayManager event-name constants
  * Module 88:  Ad event-name constants
  */
+import type { QueueItem } from "./playManager.js"
+import type { Sound } from "./sound.js"
 
 // ---------------------------------------------------------------------------
 // System A — RepeatMode
@@ -73,7 +75,7 @@ export interface UiComponent {
  *
  * "change:currentSound" — triggered by two sites:
  *   Site A (PlayQueue.setAudioCursor): no extra args.
- *   Site B (PlayManager.setCurrentItem): passes { current: QueueItem }.
+ *   Site B (PlayManager.setCurrentItem): passes { current: Sound }.
  *   Callbacks should treat the argument as optional.
  *
  * "change:playQueueResumed" — only fires when userInitiated is true.
@@ -84,10 +86,10 @@ export interface UiComponent {
 export interface PlayManagerEventMap {
   // Named events (module 196)
   queueReset: () => void
-  "change:currentSound": (payload?: { current: unknown }) => void
+  "change:currentSound": (payload?: { current: Sound }) => void
   "change:repeatMode": (mode: RepeatMode) => void
   "add:trackAddedToPlayQueue": (payload: {
-    queueItem: unknown
+    queueItem: QueueItem
     from: "next_up" | "autoplay"
   }) => void
   "change:playQueueResumed": (uiComponent?: UiComponent) => void
@@ -111,8 +113,8 @@ export interface PlayManagerEventMap {
  */
 export interface SoundEventObject {
   type: string
-  sound: unknown // Sound instance — typed as unknown to avoid circular import
-  model: unknown // Same Sound instance
+  sound: Sound
+  model: Sound
   [key: string]: unknown
 }
 
@@ -157,7 +159,7 @@ export interface SoundEventMap {
   "change:user": () => void
   // NOTE: "change:explicit" is fired by QueueItem (module 182), not by Sound directly.
   //   Listen on a QueueItem instance, not on Sound.
-  error: (model: unknown, error: Error) => void
+  error: (model: Sound, error: Error) => void
 }
 
 // ---------------------------------------------------------------------------
