@@ -9,7 +9,104 @@
  * RepeatMode values differ from System A: "repeat_none" | "repeat_one".
  */
 
-import type { Track, V2PlaybackState } from "./track.js"
+import type { Track, V2PlaybackState, WebiToV2Message } from "./track.js"
+
+// ---------------------------------------------------------------------------
+// Audio reporter event types (module 95 — Player event generators)
+// ---------------------------------------------------------------------------
+
+/**
+ * Event object passed to the audioReporter callback.
+ * Fired on "play", "pause", and periodic "checkpoint" events
+ * by the AudioEventGenerator inside the Player.
+ */
+export interface AudioReporterEvent {
+  /** Event type. */
+  type: "play" | "pause" | "checkpoint"
+  /** Current playhead position in milliseconds. */
+  position: number
+  /** Track duration in milliseconds. */
+  duration: number
+  /** Stream preset identifier, e.g. "mp3_0_1". */
+  preset: string
+  /** Quality level, e.g. "sq" or "hq". */
+  quality: string
+  /** Player type name, e.g. "HLS" or "Progressive". */
+  playerType: string
+  /** Application state string. */
+  appState: string
+}
+
+/**
+ * Event object passed to the audioPerformanceReporter callback.
+ * Fired on play latency, seek, rebuffering, and other performance events
+ * by the AudioPerformanceEventGenerator inside the Player.
+ */
+export interface AudioPerformanceReporterEvent {
+  /** Performance event type. */
+  type:
+    | "play"
+    | "seek"
+    | "seekStart"
+    | "rebufferingStart"
+    | "rebufferingEnd"
+    | "rageSkip"
+    | "longInitialBuffering"
+    | "uninterruptedPlay"
+  /** Measured latency in milliseconds. */
+  latency: number
+  /** Streaming protocol, e.g. "hls". */
+  protocol: string
+  /** Player type name. */
+  playerType: string
+  /** Stream host domain. */
+  host: string
+  /** Bitrate in kbps. */
+  bitrate: number
+  /** Stream format string. */
+  format: string
+  /** Stream preset identifier. */
+  preset: string
+  /** Quality level. */
+  quality: string
+  /** Preloaded data, if any. */
+  preloaded: unknown
+  /** Application state string. */
+  appState: string
+}
+
+/**
+ * Event object passed to the audioErrorReporter callback.
+ * Fired on fatal playback errors by the ErrorEventGenerator inside the Player.
+ */
+export interface AudioErrorReporterEvent {
+  /** Error code string from PlayerFatalError.getCode(). */
+  errorCode: string
+  /** Collected log data. */
+  log: unknown
+  /** Random 20-character log session identifier. */
+  logId: string
+  /** Track identifier. */
+  trackId: unknown
+  /** Streaming protocol, or undefined if not yet known. */
+  protocol: string | undefined
+  /** Player type name. Defaults to "MaestroUnknown" if not available. */
+  playerType: string
+  /** Stream host domain, or undefined. */
+  host: string | undefined
+  /** Bitrate in kbps, or undefined. */
+  bitrate: number | undefined
+  /** Stream format string, or undefined. */
+  format: string | undefined
+  /** Stream preset identifier, or undefined. */
+  preset: string | undefined
+  /** Quality level, or undefined. */
+  quality: string | undefined
+  /** Stream URL, or undefined. */
+  url: string | undefined
+  /** Application state string. */
+  appState: string
+}
 
 // ---------------------------------------------------------------------------
 // RepeatMode (System B)
@@ -272,13 +369,17 @@ export interface IPlayer {
   setAuthToken(token: string): void
 
   /** Set the audio analytics reporter. */
-  setAudioReporter(reporter: unknown): void
+  setAudioReporter(reporter: (event: AudioReporterEvent) => void): void
 
   /** Set the audio performance analytics reporter. */
-  setAudioPerformanceReporter(reporter: unknown): void
+  setAudioPerformanceReporter(
+    reporter: (event: AudioPerformanceReporterEvent) => void
+  ): void
 
   /** Set the audio error analytics reporter. */
-  setAudioErrorReporter(reporter: unknown): void
+  setAudioErrorReporter(
+    reporter: (event: AudioErrorReporterEvent) => void
+  ): void
 
   /** Enable or disable auth token refresh. */
   setRefreshTokenEnabled(enabled: boolean): void
@@ -323,11 +424,13 @@ export interface NativePlayer extends IPlayer {
   /** Supported DRM protocol identifiers. */
   supportedDrmProtocols: string[] | undefined
   /** Audio analytics reporter. */
-  audioReporter: unknown | undefined
+  audioReporter: ((event: AudioReporterEvent) => void) | undefined
   /** Audio performance analytics reporter. */
-  audioPerformanceReporter: unknown | undefined
+  audioPerformanceReporter:
+    | ((event: AudioPerformanceReporterEvent) => void)
+    | undefined
   /** Audio error analytics reporter. */
-  audioErrorReporter: unknown | undefined
+  audioErrorReporter: ((event: AudioErrorReporterEvent) => void) | undefined
 
   // ---- NativePlayer-only methods ----
 
@@ -535,10 +638,10 @@ export interface V2Bridge {
   getWebiEmbedId(): Promise<string>
 
   /** Add a handler for incoming V2 messages. */
-  addMessageHandler(handler: (data: unknown) => void): void
+  addMessageHandler(handler: (data: WebiToV2Message) => void): void
 
   /** Remove a previously registered V2 message handler. */
-  removeMessageHandler(handler: (data: unknown) => void): void
+  removeMessageHandler(handler: (data: WebiToV2Message) => void): void
 
   /** Returns true if the given MessageEvent origin is trusted. */
   isEventOriginTrusted(event: MessageEvent): boolean

@@ -12,7 +12,8 @@
  */
 
 import type Backbone from "backbone"
-import type { SoundEventMap, SoundEventObject } from "./events.js"
+import type { SoundEventMap } from "./events.js"
+import type { AudioReporterEvent } from "./nativePlayer.js"
 
 // ---------------------------------------------------------------------------
 // Supporting types
@@ -57,6 +58,114 @@ export interface SourceInfo {
  */
 export interface Visual {
   [key: string]: unknown
+}
+
+// ---------------------------------------------------------------------------
+// System A audio player (Sound.player — return value of r(344).createPlayer)
+// ---------------------------------------------------------------------------
+
+/**
+ * Per-track audio player for System A (legacy SoundCloud player).
+ * Created by r(344).createPlayer() and assigned to Sound.player.
+ *
+ * Note: this is NOT the same as SCAudioPlayer in nativePlayer.ts,
+ * which is the System B (NativePlayer) per-track player.
+ */
+export interface SoundAPlayer {
+  /** Begin or resume playback. */
+  play(): Promise<void>
+  /** Pause playback. */
+  pause(): Promise<void>
+  /** Fade out and pause over durationMs milliseconds. */
+  pauseAfterFade(durationMs: number): Promise<void>
+  /** Seek to an absolute position in milliseconds. */
+  seek(position: number): void
+  /** Destroy the player instance. */
+  kill(): void
+  /** Release the reference-counted player handle. */
+  release(): void
+  /** Enable audio preloading. */
+  enablePreloading(): void
+  /** Disable audio preloading. */
+  disablePreloading(): void
+  /** Returns true if audio is buffering. */
+  isLoading(): boolean
+  /** Returns true if audio is actively playing. */
+  isPlaying(): boolean
+  /** Returns true if playback has ended. */
+  isEnded(): boolean
+  /** Returns the current playback position in milliseconds. */
+  getPosition(): number
+  /** Returns the total duration in milliseconds, or null if not yet known. */
+  getDuration(): number | null
+  /** Returns the accumulated listen time in milliseconds. */
+  getListenTime(): number
+  /** Returns the current audio quality string (e.g. "sq"), or null. */
+  getQuality(): string | null
+  /** Returns the currently buffered time range, or null. */
+  getCurrentBufferedTimeRange(): { end: number } | null
+  /** Add an event listener. Returns a handle with a remove() method. */
+  addEventListener(
+    event: string,
+    handler: (...args: unknown[]) => void
+  ): { remove(): void }
+}
+
+// ---------------------------------------------------------------------------
+// Playlist (Sound.playlist — module 66)
+// ---------------------------------------------------------------------------
+
+/**
+ * Minimal interface for the Backbone Playlist model (module 66).
+ * Assigned to Sound.playlist when a sound belongs to a playlist context.
+ */
+export interface SoundPlaylist {
+  /** "playlist" — fixed resource type. */
+  readonly resource_type: "playlist"
+  /** Numeric playlist identifier. */
+  id: number
+  /** Read a Backbone model attribute by key. */
+  get(key: string): unknown
+  /** Returns the playlist's URN string. */
+  getUrn(): string
+  /** Returns the shareable permalink URL. */
+  getShareURL(): string
+  /** Returns the zero-based index of the given sound in the playlist. */
+  getSoundIndex(sound: Sound): number
+}
+
+// ---------------------------------------------------------------------------
+// VisualsCollection (Sound._visuals — module 779)
+// ---------------------------------------------------------------------------
+
+/**
+ * Backbone Collection for waveform / artwork animation data (module 779).
+ * Lazily created on the first "change:visuals" event on a Sound instance.
+ */
+export interface VisualsCollection {
+  /** Timestamp (Date.now()) of the last fetch. */
+  lastFetchTime: number
+  /** Release the reference-counted collection handle. */
+  release(): void
+  /** Reset collection contents from raw API data. */
+  reset(items: unknown[], opts?: { parse?: boolean }): void
+}
+
+// ---------------------------------------------------------------------------
+// QueueMetadata (return type of Sound.getQueueMetadataAt)
+// ---------------------------------------------------------------------------
+
+/**
+ * Metadata returned by Sound.getQueueMetadataAt(index).
+ * Used by PlayManager when building QueueItem instances.
+ */
+export interface QueueMetadata {
+  /** Source context metadata for analytics. */
+  sourceInfo: SourceInfo
+  /** Zero-based position within the originating query results. */
+  queryPosition: number
+  /** The original model (e.g. Sound, Playlist item). null if standalone. */
+  originalModel: Sound | null
 }
 
 // ---------------------------------------------------------------------------
@@ -154,13 +263,14 @@ export interface Sound extends Backbone.Model {
   // -------------------------------------------------------------------------
 
   /**
-   * The underlying audio player instance.
+   * The underlying audio player instance (System A legacy player).
    * null until createPlayer() is called.
+   * @see SoundAPlayer
    */
-  player: unknown | null
+  player: SoundAPlayer | null
 
   /** Playlist this sound belongs to, or null. */
-  playlist: unknown | null
+  playlist: SoundPlaylist | null
 
   /**
    * Original sound reference when this is a copy inside a playlist.
@@ -184,7 +294,7 @@ export interface Sound extends Backbone.Model {
   // Included for completeness; prefer public API methods over direct access.
 
   /** Internal visuals (waveform) collection. null until loaded. */
-  _visuals: unknown | null
+  _visuals: VisualsCollection | null
   /** Metadata from the last user action (play, pause, etc.). */
   _lastActionMetadata: Record<string, unknown>
   /** Whether this sound is currently marked as temporarily unavailable. */
@@ -519,7 +629,7 @@ export interface Sound extends Backbone.Model {
    * Returns metadata for the queue at the given index.
    * Delegates to the containing collection if present.
    */
-  getQueueMetadataAt(index: number): unknown
+  getQueueMetadataAt(index: number): QueueMetadata
 
   // -------------------------------------------------------------------------
   // Player management
@@ -653,9 +763,10 @@ export interface Sound extends Backbone.Model {
 
   /**
    * Track an audio event for analytics.
+   * Bound as the audioReporter callback on the underlying SoundAPlayer.
    * @param event — the player event object to report.
    */
-  trackAudioEvent(event: unknown): void
+  trackAudioEvent(event: AudioReporterEvent): void
 
   /**
    * Returns the original Sound instance.
@@ -665,18 +776,21 @@ export interface Sound extends Backbone.Model {
 
   /**
    * Handle a like action on this sound.
+   * Updates "likes_count" by ±1 based on event.state.
    */
-  onLike(event: unknown): void
+  onLike(event: { state: boolean }): void
 
   /**
    * Handle a repost action on this sound.
+   * Updates "reposts_count" by ±1 based on event.state.
    */
-  onRepost(event: unknown): void
+  onRepost(event: { state: boolean }): void
 
   /**
    * Handle a comment action on this sound.
+   * Updates "comment_count" by ±1 based on event.state.
    */
-  onComment(event: unknown): void
+  onComment(event: { state: boolean }): void
 
   // -------------------------------------------------------------------------
   // Static members (not expressible in TypeScript interface)

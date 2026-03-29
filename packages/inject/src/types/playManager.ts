@@ -9,7 +9,7 @@
  */
 
 import type { PlayManagerEventMap, RepeatMode, UiComponent } from "./events.js"
-import type { Sound } from "./sound.js"
+import type { Sound, SourceInfo } from "./sound.js"
 
 // ---------------------------------------------------------------------------
 // Supporting types
@@ -80,6 +80,168 @@ export interface PlayManagerStates {
 export type PlayManagerStateName = keyof PlayManagerStates
 
 // ---------------------------------------------------------------------------
+// ContextSnapshot and LayoutInfo
+// ---------------------------------------------------------------------------
+
+/**
+ * Current page layout context, captured from the router at play time.
+ * Part of ContextSnapshot (module 266 — getCurrentLayoutInfo).
+ */
+export interface LayoutInfo {
+  /** Route argument map from the current router state. */
+  args: Record<string, unknown>
+  /** Layout name, e.g. "user", "discover", "listen". */
+  layoutName: string
+  /** Current URL path + query string + hash fragment. */
+  url: string
+}
+
+/**
+ * Context snapshot captured when a QueueItem is enqueued.
+ *
+ * Passed as the `metadata` argument to playSource(), setInitialSource(),
+ * toggleSource(), etc., and stored as `QueueItem.contextSnapshot`.
+ *
+ * Used by:
+ *   - restoreState()      — reads restoreUrl to navigate back
+ *   - trackAudioEvent()   — reads sourceInfo for analytics attribution
+ *   - QueueItemView       — reads restoreUrl for the "back to context" link
+ */
+export interface ContextSnapshot {
+  /**
+   * URL to navigate back to when restoring play context.
+   * undefined or null when no restore URL is applicable
+   * (e.g. explicit queue additions).
+   */
+  restoreUrl?: string | null
+  /** Source context for analytics attribution. */
+  sourceInfo: SourceInfo
+  /** Page layout context at the time of enqueueing. */
+  layoutInfo?: LayoutInfo
+}
+
+// ---------------------------------------------------------------------------
+// PlayManager dependencies (passed to PlayManager.initialize())
+// ---------------------------------------------------------------------------
+
+/**
+ * Ad lifecycle controller (module 52 — singleton of module 1415 factory).
+ * Passed as the first argument to PlayManager.initialize().
+ */
+export interface AdManager extends Backbone.Events {
+  /** The current AdPodController instance, or null between ad breaks. */
+  adPodController: unknown | null
+  /** Begin an ad break with the given ad sound. */
+  beginAdBreak(sound: Sound, opts?: Record<string, unknown>): void
+  /** Request that the current ad be skipped. */
+  requestSkipCurrentAd(opts?: Record<string, unknown>): void
+  /** Request that the entire ad break be skipped. */
+  requestSkipAdBreak(opts?: Record<string, unknown>): void
+  /** Mark the current ad as immediately skippable. */
+  setCanSkipImmediately(canSkip: boolean): void
+  /** Dismiss the leave-behind overlay. */
+  dismissLeaveBehind(): void
+  /** Returns true if an AdPodController is currently set. */
+  doesAdBreakExist(): boolean
+  /** Returns true if an ad break is actively playing. */
+  isAdBreakActive(): boolean
+  /** Returns true if the user is allowed to skip the current ad. */
+  isAllowedToSkipCurrentAd(): boolean
+  /** Returns true if the user is allowed to skip the entire ad break. */
+  isAllowedToSkipAdBreak(): boolean
+  /** Returns the current AdController, or null. Internal use. */
+  getCurrentAdController(): unknown
+  /** Returns the current AudioAd model, or null. */
+  getCurrentAd(): unknown | null
+  /** Returns the Sound instance for the current ad audio, or null. */
+  getCurrentAdSound(): Sound | null
+  /** Returns the current ad visual controller, or null. Internal use. */
+  getCurrentAdVisualController(): unknown
+  /** Returns the Sound that will play after the current ad break, or null. */
+  getUpcomingSound(): Sound | null
+  /** Returns the 0-based index of the current ad in the pod. */
+  getCurrentAdIndex(): number
+  /** Returns the total number of ads in the current pod. */
+  getAdBreakSize(): number
+  /** Returns the DSA config for the current ad, or null. */
+  getDsaConfig(): unknown | null
+  /** Returns the advertiser name for the current ad, or null. */
+  getCurrentAdAdvertiser(): string | null
+}
+
+/**
+ * Social actions facade (module 51).
+ * Passed as the second argument to PlayManager.initialize().
+ * PlayManager uses it to track play history and listen for "destroy" events.
+ */
+export interface DestroyManager extends Backbone.Events {
+  /**
+   * Record a sound play in the play history.
+   * @param soundId — numeric sound ID.
+   * @param playContext — opaque play context data.
+   * @param force — if true, force-adds even if already present.
+   */
+  addToPlayHistory(soundId: number, playContext: unknown, force: boolean): void
+  /** Clear all play history entries. */
+  clearPlayHistory(): void
+  /** Destroy the given model. */
+  destroy(model: unknown, opts?: Record<string, unknown>): void
+  /** Toggle the like state on the given model. */
+  like(model: unknown, state: boolean, opts?: Record<string, unknown>): void
+  /** Toggle the repost state on the given model. */
+  repost(model: unknown, state: boolean, opts?: Record<string, unknown>): void
+  /** Toggle the follow state on the given model. */
+  follow(model: unknown, state: boolean, opts?: Record<string, unknown>): void
+  /** Post a comment on the given model. */
+  comment(
+    model: unknown,
+    comment: unknown,
+    opts?: Record<string, unknown>
+  ): void
+}
+
+/**
+ * Reactive key-value store for sound state restoration (module 757).
+ * Assigned to PlayManager.restoreSoundStore in initialize().
+ *
+ * PlayManager.restoreState() writes "restoreToSound" here; views that
+ * implement the RestorableMixin listen for this key to scroll into view.
+ */
+export interface RestoreSoundStore extends Backbone.Events {
+  /** Returns the stored "restoreToSound" value (e.g. "sound12345"), or null. */
+  get(key: "restoreToSound"): string | null
+  /** Returns the stored value for any key, or undefined. */
+  get(key: string): unknown
+  /**
+   * Store a "restoreToSound" value and optionally suppress the event.
+   * Pass null to clear the stored value.
+   */
+  set(
+    key: "restoreToSound",
+    value: string | null,
+    opts?: { silent?: boolean }
+  ): void
+  /** Store a value for any key. */
+  set(key: string, value: unknown, opts?: Record<string, unknown>): void
+}
+
+/**
+ * Opaque stream handle returned by PlayManager.setInitialSource().
+ * Pass to unsetInitialSource() to cancel the registered source.
+ *
+ * Internally this is the object returned by module 441 (stream source factory),
+ * with { next, prev, dispose } properties. Consumers should treat it as opaque.
+ */
+export interface InitialSourceStream {
+  /** Internal: next-direction stream. Do not access directly. */
+  next: unknown
+  /** Internal: previous-direction stream. Do not access directly. */
+  prev: unknown
+  /** Release all resources held by this stream. */
+  dispose(): void
+}
+
+// ---------------------------------------------------------------------------
 // QueueItem
 // ---------------------------------------------------------------------------
 
@@ -105,16 +267,16 @@ export interface QueueItem extends Backbone.Model {
   explicit: boolean
 
   /** Context snapshot captured when this item was enqueued. */
-  contextSnapshot: unknown | null
+  contextSnapshot: ContextSnapshot | null
 
-  /** Original model reference (e.g. playlist or station). */
-  originalModel: unknown | null
+  /** Original model reference (e.g. the Sound itself, or a playlist item). */
+  originalModel: Sound | null
 
   /** Position in the originating query results. */
   queryPosition: number | null
 
   /** Source metadata for analytics. */
-  sourceInfo: unknown | null
+  sourceInfo: SourceInfo | null
 
   /** UUID v4 — unique per queue item instance. */
   playSourceId: string
@@ -141,15 +303,15 @@ export interface QueueItem extends Backbone.Model {
    * and registers submodels (playlist, systemPlaylist) for lifecycle management.
    */
   setup(
-    attrs: unknown,
+    attrs: Record<string, unknown>,
     options: {
       sound: Sound
-      contextSnapshot?: unknown
-      sourceInfo?: unknown
+      contextSnapshot?: ContextSnapshot | null
+      sourceInfo?: SourceInfo | null
       index?: number | null
       order?: number | null
       explicit?: boolean
-      originalModel?: unknown
+      originalModel?: Sound | null
       queryPosition?: number | null
       [key: string]: unknown
     }
@@ -316,7 +478,7 @@ export interface PlayManager extends Backbone.Events {
    * Module 757 instance.
    * Manages the "restore to sound" URL for session restoration.
    */
-  restoreSoundStore: unknown
+  restoreSoundStore: RestoreSoundStore
 
   // -------------------------------------------------------------------------
   // Lifecycle
@@ -327,9 +489,9 @@ export interface PlayManager extends Backbone.Events {
    * Called once on startup.
    */
   initialize(
-    adManager: unknown,
-    destroyManager: unknown,
-    geoBlockHandler: unknown,
+    adManager: AdManager,
+    destroyManager: DestroyManager,
+    geoBlockHandler: GlobalEventBus,
     restoreFn?: () => void
   ): void
 
@@ -352,7 +514,7 @@ export interface PlayManager extends Backbone.Events {
   playSource(
     source: PlaySource,
     sound: Sound,
-    metadata: unknown,
+    metadata: ContextSnapshot | null,
     options?: Record<string, unknown>
   ): void
 
@@ -362,7 +524,7 @@ export interface PlayManager extends Backbone.Events {
    */
   toggleSource(
     source: PlaySource,
-    metadata: unknown,
+    metadata: ContextSnapshot | null,
     options?: Record<string, unknown>
   ): void
 
@@ -451,7 +613,7 @@ export interface PlayManager extends Backbone.Events {
   addExplicitQueueItem(
     sourceCollection: PlaySource,
     sound: Sound,
-    contextSnapshot: unknown
+    contextSnapshot: ContextSnapshot | null
   ): void
 
   /**
@@ -461,7 +623,7 @@ export interface PlayManager extends Backbone.Events {
   createExplicitQueueItem(
     sourceCollection: PlaySource,
     sound: Sound,
-    contextSnapshot: unknown
+    contextSnapshot: ContextSnapshot | null
   ): QueueItem
 
   /**
@@ -564,7 +726,7 @@ export interface PlayManager extends Backbone.Events {
    * Returns the current value of a named state flag.
    */
   getState(name: PlayManagerStateName): boolean
-  getState(name: string): unknown
+  getState(name: string): boolean | undefined
 
   /**
    * Set a named state flag. Fires "state:{name}" if the value changed.
@@ -575,7 +737,7 @@ export interface PlayManager extends Backbone.Events {
     value?: boolean,
     silent?: boolean
   ): this
-  toggleState(name: string, value?: unknown, silent?: boolean): this
+  toggleState(name: string, value?: boolean, silent?: boolean): this
 
   /**
    * Returns a snapshot of the current queue state (index + repeatMode).
@@ -608,7 +770,10 @@ export interface PlayManager extends Backbone.Events {
   /**
    * Set the initial history source for the "previous" direction.
    */
-  setInitialHistorySource(source: PlaySource, metadata: unknown): void
+  setInitialHistorySource(
+    source: PlaySource,
+    metadata: ContextSnapshot | null
+  ): void
 
   /**
    * Set the initial source for deferred autoplay.
@@ -617,14 +782,14 @@ export interface PlayManager extends Backbone.Events {
   setInitialSource(
     source: PlaySource,
     priority: number,
-    metadata: unknown
-  ): unknown
+    metadata: ContextSnapshot | null
+  ): InitialSourceStream | undefined
 
   /**
    * Remove a previously registered initial source.
    * @param stream — the handle returned by setInitialSource().
    */
-  unsetInitialSource(stream: unknown): void
+  unsetInitialSource(stream: InitialSourceStream): void
 
   // -------------------------------------------------------------------------
   // State restore

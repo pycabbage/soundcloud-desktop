@@ -170,6 +170,86 @@ export type IsPlayable = (track: Track) => boolean
 export type IsGeoBlocked = (track: Track) => boolean
 
 // ---------------------------------------------------------------------------
+// Ad visual types (module 92 / CrossfadeIframeManager)
+// ---------------------------------------------------------------------------
+
+/**
+ * Image-based ad visual.
+ * Used for `companion_display` and `leave_behind` in AudioAdPayload.
+ */
+export interface AdVisualImage {
+  /** Click destination URL. */
+  landing_page: string
+  /** DFP ad URN, e.g. "dfp:ads:1-3". */
+  ad_urn: string
+  /** Image URL (JPEG). */
+  ad_visual: string
+  /** Pixel tracking URLs. */
+  tracking: {
+    impression: string[]
+    ad_click: string[]
+  }
+}
+
+/**
+ * HTML-based ad visual.
+ * Used for `html_companion_display` and `html_leave_behind` in AudioAdPayload.
+ */
+export interface AdVisualHtml {
+  /** Click destination URL. */
+  landing_page: string
+  /** DFP ad URN. */
+  ad_urn: string
+  /** Ad width in pixels. */
+  width: number
+  /** Ad height in pixels. */
+  height: number
+  /** Raw HTML markup for the ad. */
+  html_resource: string
+  /** Pixel tracking URLs. */
+  tracking: {
+    impression: string[]
+    ad_click: string[]
+  }
+}
+
+/**
+ * Audio ad payload in "set-current-ad" V2ToWebiMessage.
+ * Constructed by CrossfadeIframeManager._handleAdManagerChangeSound().
+ * null when no ad is currently active.
+ */
+export interface AudioAdPayload {
+  /** Audio metadata. */
+  audio: {
+    /** Ad audio duration in milliseconds. */
+    duration: number
+    /** Advertiser name, or undefined if not set. */
+    advertiser: string | undefined
+  }
+  /** Image companion display (null if unavailable). */
+  companion_display: AdVisualImage | null
+  /** HTML companion display (null if unavailable). */
+  html_companion_display: AdVisualHtml | null
+  /** Image leave-behind (null if unavailable). */
+  leave_behind: AdVisualImage | null
+  /** HTML leave-behind (null if unavailable). */
+  html_leave_behind: AdVisualHtml | null
+}
+
+/**
+ * Digital Services Act (DSA) configuration.
+ * Received in "set-current-ad" messages for EU ad transparency compliance.
+ */
+export interface DsaConfig {
+  /** User age. */
+  age: number
+  /** ISO 3166-1 alpha-2 country code, e.g. "DE". */
+  country_code: string
+  /** Whether listening history is used for ad targeting. */
+  listening_history: boolean
+}
+
+// ---------------------------------------------------------------------------
 // V2 bridge message types (modules 29637 / 40445)
 // ---------------------------------------------------------------------------
 
@@ -184,8 +264,8 @@ export type V2ToWebiMessage =
   | { kind: "sync-playback-state"; playbackState: V2PlaybackState }
   | {
       kind: "set-current-ad"
-      audioAd: unknown
-      dsaConfig: unknown
+      audioAd: AudioAdPayload | null
+      dsaConfig: DsaConfig | null
       index: number
       total: number
     }
