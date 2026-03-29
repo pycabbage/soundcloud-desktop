@@ -12,6 +12,7 @@
     "@types/backbone": "^1.4.23"
   },
   "peerDependencies": {
+    "@types/bun": "^1.3.11",
     "typescript": "^5"
   },
   "dependencies": {

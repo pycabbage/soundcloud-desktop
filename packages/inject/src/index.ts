@@ -29,11 +29,13 @@ listen<IRequest>("get-song-title", async (event) => {
 }).catch(console.error)
 console.log("inject script loaded")
 
-playManager.on("change:currentSound", (...args) => {
-  console.log("[event] change:currentSound", ...args)
-})
-playManager.on("add:trackAddedToPlayQueue", (...args) => {
-  console.log("[event] add:trackAddedToPlayQueue", ...args)
+playManager.on("change:currentSound", async (payload) => {
+  console.log("[event] change:currentSound", payload)
+  if (payload?.current) {
+    // await invoke("song_title", {
+    //   title: payload.current,
+    // })
+  }
 })
 playManager.on("state:globalPlayLock", (val) =>
   console.log("[event] state:globalPlayLock", val)
