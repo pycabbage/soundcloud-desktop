@@ -2,7 +2,8 @@ import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
 import { getPlayManager } from "./lib/playManager"
 import { getV2BridgePlayer } from "./lib/v2BridgePlayer"
-import type { PlayManager, V2BridgePlayer } from "./types"
+import type { V2BridgePlayer } from "./types/nativePlayer"
+import type { PlayManager } from "./types/playManager"
 
 const v2BridgePlayer = getV2BridgePlayer()
 const playManager = getPlayManager()
@@ -28,9 +29,15 @@ listen<IRequest>("get-song-title", async (event) => {
 }).catch(console.error)
 console.log("inject script loaded")
 
-playManager.on("state:globalPlayLock", (...args) =>
-  console.log("[event] state:globalPlayLock", args)
+playManager.on("change:currentSound", (...args) => {
+  console.log("[event] change:currentSound", ...args)
+})
+playManager.on("add:trackAddedToPlayQueue", (...args) => {
+  console.log("[event] add:trackAddedToPlayQueue", ...args)
+})
+playManager.on("state:globalPlayLock", (val) =>
+  console.log("[event] state:globalPlayLock", val)
 )
-playManager.on("state:fallbackEnabled", (...args) =>
-  console.log("[event] state:fallbackEnabled", args)
+playManager.on("state:fallbackEnabled", (val) =>
+  console.log("[event] state:fallbackEnabled", val)
 )

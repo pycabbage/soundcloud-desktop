@@ -13,13 +13,6 @@
 /** Repeat mode values for System A (PlayManager). */
 export type RepeatMode = "all" | "none" | "one"
 
-/** Repeat mode constants object (module 91). */
-export interface RepeatModeConstants {
-  readonly all: "all"
-  readonly none: "none"
-  readonly one: "one"
-}
-
 // ---------------------------------------------------------------------------
 // PlayManager event-name constants (module 196)
 // ---------------------------------------------------------------------------
@@ -54,8 +47,6 @@ export const AdEvents = {
   END_AD_BREAK: "ads:endAdBreak",
   DISMISS_LEAVE_BEHIND: "ads:dismissLeaveBehind",
 } as const
-
-export type AdEventName = (typeof AdEvents)[keyof typeof AdEvents]
 
 // ---------------------------------------------------------------------------
 // Supporting types for event payloads

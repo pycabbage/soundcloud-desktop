@@ -1,4 +1,4 @@
-import type { V2BridgePlayer } from "../types"
+import type { V2BridgePlayer } from "../types/nativePlayer"
 import { panic } from "./utils"
 import { getModule } from "./webpack"
 

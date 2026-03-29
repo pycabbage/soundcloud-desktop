@@ -37,7 +37,7 @@ pub fn run() {
                 .iter()
                 .find(|c| c.label == "main")
                 .expect("main window config not found");
-            tauri::WebviewWindowBuilder::from_config(
+            let window = tauri::WebviewWindowBuilder::from_config(
                 app,
                 window_config,
             )?
@@ -68,6 +68,12 @@ pub fn run() {
                 }
             })
             .build()?;
+
+            #[cfg(debug_assertions)]
+            {
+                window.open_devtools();
+            }
+
 
             // Setup system tray menu
             let menu = Menu::with_items(app, &[

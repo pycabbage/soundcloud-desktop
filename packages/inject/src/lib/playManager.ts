@@ -1,4 +1,4 @@
-import type { PlayManager } from "../types"
+import type { PlayManager } from "../types/playManager"
 import { panic } from "./utils"
 import { getModule, getWebpackRequire } from "./webpack"
 

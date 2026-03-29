@@ -1,0 +1,18 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "inject:build",
+      "type": "shell",
+      "command": "bun run --filter @soundcloud-desktop/inject build",
+      "problemMatcher": []
+    },
+    {
+      "label": "tauri:build:dev",
+      "type": "shell",
+      "dependsOn": "inject:build",
+      "command": "cargo tauri build --no-bundle --debug",
+      "problemMatcher": []
+    }
+  ]
+}
