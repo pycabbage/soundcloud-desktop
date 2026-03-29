@@ -32,9 +32,10 @@ console.log("inject script loaded")
 playManager.on("change:currentSound", async (payload) => {
   console.log("[event] change:currentSound", payload)
   if (payload?.current) {
-    // await invoke("song_title", {
-    //   title: payload.current,
-    // })
+    payload.current.attributes
+    await invoke("song_title", {
+      title: payload.current.get("title"),
+    })
   }
 })
 playManager.on("state:globalPlayLock", (val) =>
