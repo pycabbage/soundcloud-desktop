@@ -32,8 +32,10 @@ console.log("inject script loaded")
 playManager.on("change:currentSound", async (payload) => {
   console.log("[event] change:currentSound", payload)
   if (payload?.current) {
+    const title = payload.current.get("title")
+    console.log("current sound title", title)
     await invoke("song_title", {
-      title: payload.current.get("title"),
+      title,
     })
   }
 })
@@ -43,3 +45,11 @@ playManager.on("state:globalPlayLock", (val) =>
 playManager.on("state:fallbackEnabled", (val) =>
   console.log("[event] state:fallbackEnabled", val)
 )
+
+async function init() {
+  await invoke("song_title", {
+    title: v2BridgePlayer.currentTrack?.title,
+  })
+}
+
+init().catch(console.error)

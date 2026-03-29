@@ -169,6 +169,158 @@ export interface QueueMetadata {
 }
 
 // ---------------------------------------------------------------------------
+// Sound model attributes (Backbone.Model<SoundAttributes> generic)
+// ---------------------------------------------------------------------------
+
+/** Publisher metadata embedded in SoundAttributes. */
+export interface SoundPublisherMetadata {
+  id: number
+  urn: string
+  contains_music: boolean
+}
+
+/**
+ * Audio transcoding format descriptor — System A (REST API).
+ * Distinct from `TranscodingFormat` in track.ts (System B / GraphQL).
+ */
+export interface SoundTranscodingFormat {
+  /** Streaming protocol, e.g. "hls" or "progressive". */
+  protocol: string
+  /** MIME type, e.g. "audio/mp4; codecs=\"mp4a.40.2\"". */
+  mime_type: string
+}
+
+/**
+ * A single audio transcoding — System A (REST API).
+ * Distinct from `Transcoding` in track.ts: uses a full stream URL instead of
+ * a relative URL + uuid pair.
+ */
+export interface SoundTranscoding {
+  /** Full stream URL (HLS manifest or progressive file). */
+  url: string
+  /** Preset identifier, e.g. "aac_160k", "mp3_1_0", "opus_0_0". */
+  preset: string
+  /** Duration in milliseconds. */
+  duration: number
+  /** Whether this is a snippet (preview) transcoding. */
+  snipped: boolean
+  /** Format descriptor. */
+  format: SoundTranscodingFormat
+  /** Quality level, e.g. "sq" (standard) or "hq" (high). */
+  quality: string
+  /** True for older mp3/opus transcodings pre-dating the AAC rollout. */
+  is_legacy_transcoding: boolean
+}
+
+/** Sound.attributes.media — container for available transcodings. */
+export interface SoundMedia {
+  transcodings: SoundTranscoding[]
+}
+
+/** Creator badge flags embedded in SoundUser. */
+export interface SoundUserBadges {
+  pro: boolean
+  creator_mid_tier: boolean
+  pro_unlimited: boolean
+  verified: boolean
+}
+
+/**
+ * User sub-object embedded in Sound.attributes — System A (REST API).
+ * Distinct from `TrackUser` in track.ts (System B / GraphQL).
+ */
+export interface SoundUser {
+  id: number
+  kind: "user"
+  avatar_url: string | null
+  first_name: string
+  last_name: string
+  full_name: string
+  permalink: string
+  permalink_url: string
+  uri: string
+  urn: string
+  username: string
+  verified: boolean
+  city: string | null
+  country_code: string | null
+  followers_count: number
+  last_modified: string
+  badges: SoundUserBadges
+  station_urn: string
+  station_permalink: string
+}
+
+/**
+ * Shape of the Sound Backbone model's `attributes` object.
+ *
+ * Sourced from:
+ *   - Runtime: `JSON.stringify(payload.current.attributes)` captured from the
+ *     `change:currentSound` event.
+ *   - Static: Sound model definition in `54-8313710f.js`
+ *     (`resource_type: "sound"`, serialisation field list, mixin list).
+ *
+ * Pass this as the generic parameter to `Backbone.Model<SoundAttributes>` so
+ * that `sound.get("title")` resolves to `string | undefined`, etc.
+ */
+export interface SoundAttributes {
+  id: number
+  kind: "track"
+  monetization_model: string
+  /** Playback policy: "ALLOW", "BLOCK", or "SNIP". */
+  policy: string
+  artwork_url: string | null
+  caption: string | null
+  commentable: boolean
+  comment_count: number
+  /** ISO 8601 creation timestamp. */
+  created_at: string
+  description: string | null
+  /** ISO 8601 display date (may differ from created_at for scheduled releases). */
+  display_date: string
+  downloadable: boolean
+  download_count: number
+  /** Track duration in milliseconds (may be slightly shorter than full_duration). */
+  duration: number
+  /** Who can embed the track: "all", "me", or "none". */
+  embeddable_by: string
+  /** True full duration in milliseconds. */
+  full_duration: number
+  genre: string | null
+  has_downloads_left: boolean
+  label_name: string | null
+  /** ISO 8601 timestamp of the last metadata modification. */
+  last_modified: string
+  license: string
+  likes_count: number
+  media: SoundMedia
+  permalink: string
+  permalink_url: string
+  playback_count: number
+  public: boolean
+  publisher_metadata: SoundPublisherMetadata | null
+  purchase_title: string | null
+  purchase_url: string | null
+  release_date: string | null
+  reposts_count: number
+  secret_token: string | null
+  sharing: SoundSharing
+  state: SoundState
+  station_permalink: string
+  station_urn: string
+  streamable: boolean
+  tag_list: string
+  title: string
+  track_authorization: string | null
+  uri: string
+  urn: string
+  user: SoundUser
+  user_id: number
+  visuals: Visual[] | null
+  waveform_url: string | null
+}
+
+// ---------------------------------------------------------------------------
 // Sound interface
 // ---------------------------------------------------------------------------
 
@@ -181,7 +333,7 @@ export interface QueueMetadata {
  * The on/off/trigger overloads below provide type-safe event handling.
  * A string catch-all overload is included for Backbone compatibility.
  */
-export interface Sound extends Backbone.Model {
+export interface Sound extends Backbone.Model<SoundAttributes> {
   // -------------------------------------------------------------------------
   // Typed event overloads (SoundEventMap)
   // -------------------------------------------------------------------------
@@ -251,7 +403,17 @@ export interface Sound extends Backbone.Model {
   // Core attributes (stored in Backbone.Model attributes)
   // -------------------------------------------------------------------------
 
-  /** Track identifier. */
+  /**
+   * Backbone model identifier, mirroring `SoundAttributes.id`.
+   *
+   * Typed as `number | string` (wider than `SoundAttributes.id: number`) for
+   * Backbone compatibility — some Sound instances are created with composite
+   * string identifiers (e.g. playlist-context copies use
+   * `{ playlist_id, sound_id }` hashed to a string by `Sound.hashFn`).
+   *
+   * To access via the attributes bag use `sound.get("id")` instead,
+   * which returns `number | undefined` per `SoundAttributes`.
+   */
   id: number | string
   /** "sound" — fixed resource type string. */
   resource_type: "sound"
