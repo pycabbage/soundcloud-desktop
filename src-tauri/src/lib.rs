@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
+use serde::Deserialize;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconEvent},
@@ -14,32 +15,146 @@ struct PendingRequests(Mutex<HashMap<u32, oneshot::Sender<String>>>);
 
 struct DiscordState(std::sync::Mutex<Option<DiscordIpcClient>>);
 
+#[derive(Deserialize)]
+struct SoundUserBadges {
+    pro: Option<bool>,
+    creator_mid_tier: Option<bool>,
+    pro_unlimited: Option<bool>,
+    verified: Option<bool>,
+}
+
+#[derive(Deserialize)]
+struct SoundUser {
+    id: Option<u64>,
+    kind: Option<String>,
+    avatar_url: Option<String>,
+    first_name: Option<String>,
+    last_name: Option<String>,
+    full_name: Option<String>,
+    permalink: Option<String>,
+    permalink_url: Option<String>,
+    uri: Option<String>,
+    urn: Option<String>,
+    username: Option<String>,
+    verified: Option<bool>,
+    city: Option<String>,
+    country_code: Option<String>,
+    followers_count: Option<u32>,
+    last_modified: Option<String>,
+    badges: Option<SoundUserBadges>,
+    station_urn: Option<String>,
+    station_permalink: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct SoundPublisherMetadata {
+    id: Option<u64>,
+    urn: Option<String>,
+    contains_music: Option<bool>,
+}
+
+#[derive(Deserialize)]
+struct SoundTranscodingFormat {
+    protocol: Option<String>,
+    mime_type: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct SoundTranscoding {
+    url: Option<String>,
+    preset: Option<String>,
+    duration: Option<u64>,
+    snipped: Option<bool>,
+    format: Option<SoundTranscodingFormat>,
+    quality: Option<String>,
+    is_legacy_transcoding: Option<bool>,
+}
+
+#[derive(Deserialize)]
+struct SoundMedia {
+    transcodings: Option<Vec<SoundTranscoding>>,
+}
+
+#[derive(Deserialize)]
+struct SoundAttributes {
+    id: Option<u64>,
+    kind: Option<String>,
+    monetization_model: Option<String>,
+    policy: Option<String>,
+    artwork_url: Option<String>,
+    caption: Option<String>,
+    commentable: Option<bool>,
+    comment_count: Option<u32>,
+    created_at: Option<String>,
+    description: Option<String>,
+    display_date: Option<String>,
+    downloadable: Option<bool>,
+    download_count: Option<u32>,
+    duration: Option<u64>,
+    embeddable_by: Option<String>,
+    full_duration: Option<u64>,
+    genre: Option<String>,
+    has_downloads_left: Option<bool>,
+    label_name: Option<String>,
+    last_modified: Option<String>,
+    license: Option<String>,
+    likes_count: Option<u32>,
+    media: Option<SoundMedia>,
+    permalink: Option<String>,
+    permalink_url: Option<String>,
+    playback_count: Option<u32>,
+    public: Option<bool>,
+    publisher_metadata: Option<SoundPublisherMetadata>,
+    purchase_title: Option<String>,
+    purchase_url: Option<String>,
+    release_date: Option<String>,
+    reposts_count: Option<u32>,
+    secret_token: Option<String>,
+    sharing: Option<String>,
+    state: Option<String>,
+    station_permalink: Option<String>,
+    station_urn: Option<String>,
+    streamable: Option<bool>,
+    tag_list: Option<String>,
+    title: Option<String>,
+    track_authorization: Option<String>,
+    uri: Option<String>,
+    urn: Option<String>,
+    user: Option<SoundUser>,
+    user_id: Option<u64>,
+    visuals: Option<serde_json::Value>,
+    waveform_url: Option<String>,
+}
+
 #[tauri::command]
-async fn song_title(
+async fn event_change_current_sound(
     request_id: Option<u32>,
-    title: String,
+    attributes: SoundAttributes,
     pending: State<'_, PendingRequests>,
     discord: State<'_, DiscordState>,
 ) -> Result<(), String> {
     {
         let mut map = pending.0.lock().await;
+        let title = attributes.title.clone().unwrap_or_default();
         println!(
             "Received result for request {}: {}",
             request_id.unwrap_or(0),
             title
         );
         if let Some(tx) = map.remove(&request_id.unwrap_or(0)) {
-            let _ = tx.send(title.clone());
+            let _ = tx.send(title);
         }
     }
 
     // Update Discord Rich Presence
-    if !title.is_empty() {
-        let act = activity::Activity::new().details(&title);
-        if let Ok(mut guard) = discord.0.lock() {
-            if let Some(client) = guard.as_mut() {
-                if let Err(e) = client.set_activity(act) {
-                    eprintln!("Discord presence update error: {e}");
+    if let Some(title) = &attributes.title {
+        if !title.is_empty() {
+            let act = activity::Activity::new().details(title);
+            if let Ok(mut guard) = discord.0.lock() {
+                if let Some(client) = guard.as_mut() {
+                    if let Err(e) = client.set_activity(act) {
+                        eprintln!("Discord presence update error: {e}");
+                    }
                 }
             }
         }
@@ -217,7 +332,7 @@ pub fn run() {
                 window.hide().unwrap();
             }
         })
-        .invoke_handler(tauri::generate_handler![song_title]);
+        .invoke_handler(tauri::generate_handler![event_change_current_sound]);
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, _, _| {

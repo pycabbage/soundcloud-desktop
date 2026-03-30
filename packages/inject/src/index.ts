@@ -22,9 +22,9 @@ interface IRequest {
 }
 listen<IRequest>("get-song-title", async (event) => {
   console.log("event", event)
-  await invoke("song_title", {
+  await invoke("event_change_current_sound", {
     requestId: event.payload.requestId,
-    title: v2BridgePlayer.currentTrack?.title,
+    attributes: playManager.getCurrentSound()?.attributes ?? {},
   })
 }).catch(console.error)
 console.log("inject script loaded")
@@ -32,10 +32,9 @@ console.log("inject script loaded")
 playManager.on("change:currentSound", async (payload) => {
   console.log("[event] change:currentSound", payload)
   if (payload?.current) {
-    const title = payload.current.get("title")
-    console.log("current sound title", title)
-    await invoke("song_title", {
-      title,
+    console.log("current sound attributes", payload.current.attributes)
+    await invoke("event_change_current_sound", {
+      attributes: payload.current.attributes,
     })
   }
 })
@@ -48,9 +47,12 @@ playManager.on("state:fallbackEnabled", (val) =>
 )
 
 async function init() {
-  await invoke("song_title", {
-    title: v2BridgePlayer.currentTrack?.title,
-  })
+  if (playManager.hasCurrentSound()) {
+    const currentSound = playManager.getCurrentSound()!
+    await invoke("event_change_current_sound", {
+      attributes: currentSound.attributes,
+    })
+  }
 }
 
 init().catch(console.error)
