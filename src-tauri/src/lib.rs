@@ -5,6 +5,7 @@ use tauri::{
     webview::PageLoadEvent,
     Emitter, Manager, State,
 };
+use tauri_plugin_window_state::{AppHandleExt, StateFlags, WindowExt};
 use tokio::sync::{oneshot, Mutex};
 
 struct PendingRequests(Mutex<HashMap<u32, oneshot::Sender<String>>>);
@@ -30,13 +31,12 @@ async fn song_title(
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
         .manage(PendingRequests(Mutex::new(HashMap::new())))
         .plugin(tauri_plugin_media::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            let app_handle = app.handle().clone();
-
             // Create Window
             let window_config = app
                 .config()
@@ -46,25 +46,28 @@ pub fn run() {
                 .find(|c| c.label == "main")
                 .expect("main window config not found");
             let window = tauri::WebviewWindowBuilder::from_config(app, window_config)?
-                .on_new_window(move |url, features| {
-                    // window.open() をインターセプト
-                    println!("New window requested: {}", url);
+                .on_new_window({
+                    let app_handle = app.handle().clone();
+                    move |url, features| {
+                        // window.open() をインターセプト
+                        println!("New window requested: {}", url);
 
-                    // 新しいウィンドウを生成して返す例
-                    let new_window = tauri::WebviewWindowBuilder::new(
-                        &app_handle,
-                        format!("popup-{}", url.path()),
-                        tauri::WebviewUrl::External(url.clone()),
-                    )
-                    .window_features(features)
-                    .title(url.as_str())
-                    .on_document_title_changed(|window, title| {
-                        let _ = window.set_title(&title);
-                    })
-                    .build()
-                    .unwrap();
+                        // 新しいウィンドウを生成して返す例
+                        let new_window = tauri::WebviewWindowBuilder::new(
+                            &app_handle,
+                            format!("popup-{}", url.path()),
+                            tauri::WebviewUrl::External(url.clone()),
+                        )
+                        .window_features(features)
+                        .title(url.as_str())
+                        .on_document_title_changed(|window, title| {
+                            let _ = window.set_title(&title);
+                        })
+                        .build()
+                        .unwrap();
 
-                    tauri::webview::NewWindowResponse::Create { window: new_window }
+                        tauri::webview::NewWindowResponse::Create { window: new_window }
+                    }
                 })
                 .on_page_load(|webview, payload| {
                     if payload.event() == PageLoadEvent::Finished {
@@ -76,6 +79,17 @@ pub fn run() {
                 })
                 .build()?;
 
+            window.on_window_event({
+                let app_handle = app.handle().clone();
+                move |event| match event {
+                    tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) => {
+                        app_handle.save_window_state(StateFlags::all()).unwrap();
+                    }
+                    _ => {}
+                }
+            });
+
+            // Open devtools in debug mode
             #[cfg(debug_assertions)]
             {
                 window.open_devtools();
@@ -98,6 +112,9 @@ pub fn run() {
             )?;
             let tray = app.tray_by_id("main").unwrap();
             tray.set_menu(Some(menu))?;
+
+            // Restore window state (position, size, etc.) on startup
+            window.restore_state(StateFlags::all()).unwrap();
 
             Ok(())
         })
@@ -136,29 +153,34 @@ pub fn run() {
             }
             _ => {}
         })
-        .on_tray_icon_event(|tray, event| if let TrayIconEvent::Click {
+        .on_tray_icon_event(|tray, event| {
+            if let TrayIconEvent::Click {
                 button: MouseButton::Left,
                 button_state: MouseButtonState::Up,
                 ..
-            } = event {
-            let app = tray.app_handle();
-            if let Some(window) = app.get_webview_window("main") {
-                match window.is_visible() {
-                    Ok(true) => {
-                        let _ = window.hide();
+            } = event
+            {
+                let app = tray.app_handle();
+                if let Some(window) = app.get_webview_window("main") {
+                    match window.is_visible() {
+                        Ok(true) => {
+                            let _ = window.hide();
+                        }
+                        Ok(false) => {
+                            let _ = window.unminimize();
+                            let _ = window.show();
+                            let _ = window.set_focus();
+                        }
+                        Err(_) => {}
                     }
-                    Ok(false) => {
-                        let _ = window.unminimize();
-                        let _ = window.show();
-                        let _ = window.set_focus();
-                    }
-                    Err(_) => {}
                 }
             }
         })
-        .on_window_event(|window, event| if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-            api.prevent_close();
-            window.hide().unwrap();
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                api.prevent_close();
+                window.hide().unwrap();
+            }
         })
         .invoke_handler(tauri::generate_handler![song_title]);
     #[cfg(desktop)]
