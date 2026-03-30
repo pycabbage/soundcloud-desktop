@@ -163,6 +163,15 @@ async fn event_change_current_sound(
     Ok(())
 }
 
+#[tauri::command]
+fn event_playback_state_changed(is_playing: bool) {
+    if is_playing {
+        println!("Playback: playing");
+    } else {
+        println!("Playback: paused");
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let discord_state = {
@@ -332,7 +341,10 @@ pub fn run() {
                 window.hide().unwrap();
             }
         })
-        .invoke_handler(tauri::generate_handler![event_change_current_sound]);
+        .invoke_handler(tauri::generate_handler![
+            event_change_current_sound,
+            event_playback_state_changed,
+        ]);
     #[cfg(desktop)]
     {
         builder = builder.plugin(tauri_plugin_single_instance::init(|app, _, _| {

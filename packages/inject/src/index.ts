@@ -1,8 +1,10 @@
 import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
+import { createStore } from "zustand/vanilla"
 import { getPlayManager } from "./lib/playManager"
 import { getV2BridgePlayer } from "./lib/v2BridgePlayer"
 import type { PlayManager } from "./types/playManager"
+import type { Sound } from "./types/sound"
 import type { V2BridgePlayer } from "./types/v2BridgePlayer"
 
 const v2BridgePlayer = getV2BridgePlayer()
@@ -29,8 +31,35 @@ listen<IRequest>("get-song-title", async (event) => {
 }).catch(console.error)
 console.log("inject script loaded")
 
+async function handlePlay() {
+  await invoke("event_playback_state_changed", { isPlaying: true })
+}
+async function handlePause() {
+  await invoke("event_playback_state_changed", { isPlaying: false })
+}
+
+const playPauseStore = createStore<{
+  current?: Sound
+  updateSound: (sound?: Sound) => void
+}>((set, get) => ({
+  updateSound: (sound?: Sound) => {
+    const { current } = get()
+    if (current) {
+      current.off("play", handlePlay)
+      current.off("pause", handlePause)
+    }
+    set({ current: sound })
+    if (sound) {
+      sound.on("play", handlePlay)
+      sound.on("pause", handlePause)
+    }
+  },
+}))
+
 playManager.on("change:currentSound", async (payload) => {
   console.log("[event] change:currentSound", payload)
+
+  playPauseStore.getState().updateSound(payload?.current)
   if (payload?.current) {
     console.log("current sound attributes", payload.current.attributes)
     await invoke("event_change_current_sound", {
@@ -49,6 +78,7 @@ playManager.on("state:fallbackEnabled", (val) =>
 async function init() {
   if (playManager.hasCurrentSound()) {
     const currentSound = playManager.getCurrentSound()!
+    playPauseStore.getState().updateSound(currentSound)
     await invoke("event_change_current_sound", {
       attributes: currentSound.attributes,
     })
