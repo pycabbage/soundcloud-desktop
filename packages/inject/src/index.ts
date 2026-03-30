@@ -39,6 +39,7 @@ playManager.on("change:currentSound", async (payload) => {
     })
   }
 })
+
 playManager.on("state:globalPlayLock", (val) =>
   console.log("[event] state:globalPlayLock", val)
 )

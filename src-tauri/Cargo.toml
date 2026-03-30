@@ -25,6 +25,7 @@ serde_json = "1"
 tauri-plugin-media = "0.1.1"
 tokio = "1.50.0"
 rand = "0.10.0"
+discord-rich-presence = "1.1.0"
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-single-instance = "2"

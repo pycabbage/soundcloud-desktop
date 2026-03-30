@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+
+use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconEvent},
@@ -10,30 +12,63 @@ use tokio::sync::{oneshot, Mutex};
 
 struct PendingRequests(Mutex<HashMap<u32, oneshot::Sender<String>>>);
 
+struct DiscordState(std::sync::Mutex<Option<DiscordIpcClient>>);
+
 #[tauri::command]
 async fn song_title(
     request_id: Option<u32>,
     title: String,
     pending: State<'_, PendingRequests>,
+    discord: State<'_, DiscordState>,
 ) -> Result<(), String> {
-    let mut map = pending.0.lock().await;
-    println!(
-        "Received result for request {}: {}",
-        request_id.unwrap_or(0),
-        title
-    );
-    if let Some(tx) = map.remove(&request_id.unwrap_or(0)) {
-        let _ = tx.send(title);
+    {
+        let mut map = pending.0.lock().await;
+        println!(
+            "Received result for request {}: {}",
+            request_id.unwrap_or(0),
+            title
+        );
+        if let Some(tx) = map.remove(&request_id.unwrap_or(0)) {
+            let _ = tx.send(title.clone());
+        }
     }
+
+    // Update Discord Rich Presence
+    if !title.is_empty() {
+        let act = activity::Activity::new().details(&title);
+        if let Ok(mut guard) = discord.0.lock() {
+            if let Some(client) = guard.as_mut() {
+                if let Err(e) = client.set_activity(act) {
+                    eprintln!("Discord presence update error: {e}");
+                }
+            }
+        }
+    }
+
     Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let discord_state = {
+        let mut client = DiscordIpcClient::new("1488035816130351224");
+        match client.connect() {
+            Ok(()) => {
+                println!("Discord Rich Presence connected");
+                DiscordState(std::sync::Mutex::new(Some(client)))
+            }
+            Err(e) => {
+                eprintln!("Failed to connect to Discord: {e}");
+                DiscordState(std::sync::Mutex::new(None))
+            }
+        }
+    };
+
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
         .manage(PendingRequests(Mutex::new(HashMap::new())))
+        .manage(discord_state)
         .plugin(tauri_plugin_media::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
