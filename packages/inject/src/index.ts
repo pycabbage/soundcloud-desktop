@@ -33,16 +33,22 @@ listen<IRequest>("get-song-title", async (event) => {
 }).catch(console.error)
 console.log("inject script loaded")
 
-async function handlePlay() {
-  const positionMs = soundStore.getState().current?.currentTime() ?? 0
+async function handlePlay(e: SoundEventObject) {
+  const raw =
+    e.sound?.currentTime() ?? soundStore.getState().current?.currentTime() ?? 0
+  const positionMs = Number.isFinite(raw) ? raw : 0
   await invoke("event_playback_state_changed", { isPlaying: true, positionMs })
 }
-async function handlePause() {
-  const positionMs = soundStore.getState().current?.currentTime() ?? 0
+async function handlePause(e: SoundEventObject) {
+  const raw =
+    e.sound?.currentTime() ?? soundStore.getState().current?.currentTime() ?? 0
+  const positionMs = Number.isFinite(raw) ? raw : 0
   await invoke("event_playback_state_changed", { isPlaying: false, positionMs })
 }
 async function handleSeeked(e: SoundEventObject) {
-  await invoke("event_seeked", { positionMs: e.sound.currentTime() })
+  const raw = e.sound.currentTime()
+  const positionMs = Number.isFinite(raw) ? raw : 0
+  await invoke("event_seeked", { positionMs })
 }
 
 const soundStore = createStore<{

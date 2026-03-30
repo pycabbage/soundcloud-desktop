@@ -181,6 +181,7 @@ fn update_discord_presence(
         .unwrap_or("");
 
     let details = truncate_discord_text(title);
+    // State always shows the artist name so it is always a clickable link.
     let state_text = truncate_discord_text(artist);
 
     // Upgrade thumbnail from the small 100×100 variant to 500×500.
@@ -190,9 +191,6 @@ fn update_discord_presence(
         .map(|u| u.replace("-large", "-t500x500"));
 
     let permalink_url = attrs.permalink_url.as_deref().unwrap_or("");
-
-    // Show a pause glyph when paused; show the artist name when playing.
-    let hover_text = if is_playing { state_text.as_str() } else { "⏸" };
 
     let artist_url = attrs
         .user
@@ -213,12 +211,19 @@ fn update_discord_presence(
         act = act.state_url(artist_url);
     }
 
+    // large_text is only shown when paused (renders as visible label line in Discord's
+    // Listening card). During playback it is omitted to avoid a duplicate artist line.
+    let pause_text = if !is_playing {
+        Some(truncate_discord_text("⏸"))
+    } else {
+        None
+    };
     if let Some(ref url) = image_url {
-        act = act.assets(
-            activity::Assets::new()
-                .large_image(url)
-                .large_text(hover_text),
-        );
+        let mut assets = activity::Assets::new().large_image(url);
+        if let Some(ref text) = pause_text {
+            assets = assets.large_text(text);
+        }
+        act = act.assets(assets);
     }
 
     if is_playing {
@@ -302,10 +307,10 @@ async fn event_change_current_sound(
         }
     }
 
-    // New track: treat as playing from position 0.
+    // New track: default to not playing; the subsequent play event will update the state.
     let new_state = PlaybackState {
         attributes,
-        is_playing: true,
+        is_playing: false,
         position_ms: 0.0,
     };
 
@@ -314,7 +319,7 @@ async fn event_change_current_sound(
         *guard = Some(new_state.clone());
     }
 
-    set_discord_presence(&discord, &new_state.attributes, true, 0.0);
+    set_discord_presence(&discord, &new_state.attributes, false, 0.0);
 
     Ok(())
 }
@@ -323,8 +328,9 @@ async fn event_change_current_sound(
 async fn event_playback_state_changed(
     app: tauri::AppHandle,
     is_playing: bool,
-    position_ms: f64,
+    position_ms: Option<f64>,
 ) -> Result<(), String> {
+    let position_ms = position_ms.unwrap_or(0.0);
     if is_playing {
         println!("Playback: playing at {position_ms:.0}ms");
     } else {
@@ -387,10 +393,11 @@ async fn event_playback_state_changed(
 
 #[tauri::command]
 async fn event_seeked(
-    position_ms: f64,
+    position_ms: Option<f64>,
     discord: State<'_, DiscordState>,
     current_sound: State<'_, CurrentSoundState>,
 ) -> Result<(), String> {
+    let position_ms = position_ms.unwrap_or(0.0);
     println!("Seeked to: {position_ms:.0}ms");
 
     // Update position; capture state for the presence update.
@@ -446,11 +453,7 @@ pub fn run() {
                     tokio::time::sleep(std::time::Duration::from_secs(5)).await;
 
                     let discord = app_handle.state::<DiscordState>();
-                    let needs_reconnect = discord
-                        .0
-                        .lock()
-                        .map(|g| g.is_none())
-                        .unwrap_or(false);
+                    let needs_reconnect = discord.0.lock().map(|g| g.is_none()).unwrap_or(false);
 
                     if !needs_reconnect {
                         continue;
