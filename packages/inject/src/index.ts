@@ -5,6 +5,7 @@ import { getPlayManager } from "./lib/playManager"
 import { getV2BridgePlayer } from "./lib/v2BridgePlayer"
 import type { PlayManager } from "./types/playManager"
 import type { Sound } from "./types/sound"
+import type { SoundEventObject } from "./types/soundEventObject"
 import type { V2BridgePlayer } from "./types/v2BridgePlayer"
 
 const v2BridgePlayer = getV2BridgePlayer()
@@ -37,8 +38,11 @@ async function handlePlay() {
 async function handlePause() {
   await invoke("event_playback_state_changed", { isPlaying: false })
 }
+async function handleSeeked(e: SoundEventObject) {
+  await invoke("event_seeked", { positionMs: e.sound.currentTime() })
+}
 
-const playPauseStore = createStore<{
+const soundStore = createStore<{
   current?: Sound
   updateSound: (sound?: Sound) => void
 }>((set, get) => ({
@@ -47,11 +51,13 @@ const playPauseStore = createStore<{
     if (current) {
       current.off("play", handlePlay)
       current.off("pause", handlePause)
+      current.off("seeked", handleSeeked)
     }
     set({ current: sound })
     if (sound) {
       sound.on("play", handlePlay)
       sound.on("pause", handlePause)
+      sound.on("seeked", handleSeeked)
     }
   },
 }))
@@ -59,7 +65,7 @@ const playPauseStore = createStore<{
 playManager.on("change:currentSound", async (payload) => {
   console.log("[event] change:currentSound", payload)
 
-  playPauseStore.getState().updateSound(payload?.current)
+  soundStore.getState().updateSound(payload?.current)
   if (payload?.current) {
     console.log("current sound attributes", payload.current.attributes)
     await invoke("event_change_current_sound", {
@@ -78,7 +84,7 @@ playManager.on("state:fallbackEnabled", (val) =>
 async function init() {
   if (playManager.hasCurrentSound()) {
     const currentSound = playManager.getCurrentSound()!
-    playPauseStore.getState().updateSound(currentSound)
+    soundStore.getState().updateSound(currentSound)
     await invoke("event_change_current_sound", {
       attributes: currentSound.attributes,
     })

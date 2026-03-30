@@ -172,6 +172,11 @@ fn event_playback_state_changed(is_playing: bool) {
     }
 }
 
+#[tauri::command]
+fn event_seeked(position_ms: f64) {
+    println!("Seeked to: {position_ms}ms");
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let discord_state = {
@@ -344,6 +349,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             event_change_current_sound,
             event_playback_state_changed,
+            event_seeked,
         ]);
     #[cfg(desktop)]
     {
