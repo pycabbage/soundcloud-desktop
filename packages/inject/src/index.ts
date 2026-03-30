@@ -2,23 +2,24 @@ import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
 import { createStore } from "zustand/vanilla"
 import { getPlayManager } from "./lib/playManager"
-import { getV2BridgePlayer } from "./lib/v2BridgePlayer"
-import type { PlayManager } from "./types/playManager"
+// import { getV2BridgePlayer } from "./lib/v2BridgePlayer"
+// import type { PlayManager } from "./types/playManager"
 import type { Sound } from "./types/sound"
 import type { SoundEventObject } from "./types/soundEventObject"
-import type { V2BridgePlayer } from "./types/v2BridgePlayer"
 
-const v2BridgePlayer = getV2BridgePlayer()
+// import type { V2BridgePlayer } from "./types/v2BridgePlayer"
+
+// const v2BridgePlayer = getV2BridgePlayer()
 const playManager = getPlayManager()
 
-declare global {
-  var v2BridgePlayer: V2BridgePlayer
-  var playManager: PlayManager
-}
+// declare global {
+//   // var v2BridgePlayer: V2BridgePlayer
+//   var playManager: PlayManager
+// }
 
-if (!("v2BridgePlayer" in globalThis))
-  globalThis.v2BridgePlayer = v2BridgePlayer
-if (!("playManager" in globalThis)) globalThis.playManager = playManager
+// if (!("v2BridgePlayer" in globalThis))
+//   globalThis.v2BridgePlayer = v2BridgePlayer
+// if (!("playManager" in globalThis)) globalThis.playManager = playManager
 
 interface IRequest {
   requestId: number
@@ -33,10 +34,12 @@ listen<IRequest>("get-song-title", async (event) => {
 console.log("inject script loaded")
 
 async function handlePlay() {
-  await invoke("event_playback_state_changed", { isPlaying: true })
+  const positionMs = soundStore.getState().current?.currentTime() ?? 0
+  await invoke("event_playback_state_changed", { isPlaying: true, positionMs })
 }
 async function handlePause() {
-  await invoke("event_playback_state_changed", { isPlaying: false })
+  const positionMs = soundStore.getState().current?.currentTime() ?? 0
+  await invoke("event_playback_state_changed", { isPlaying: false, positionMs })
 }
 async function handleSeeked(e: SoundEventObject) {
   await invoke("event_seeked", { positionMs: e.sound.currentTime() })
@@ -83,6 +86,7 @@ playManager.on("state:fallbackEnabled", (val) =>
 
 async function init() {
   if (playManager.hasCurrentSound()) {
+    // biome-ignore lint/style/noNonNullAssertion: We check if there is a current sound, so it can't be null
     const currentSound = playManager.getCurrentSound()!
     soundStore.getState().updateSound(currentSound)
     await invoke("event_change_current_sound", {
