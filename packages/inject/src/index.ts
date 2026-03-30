@@ -2,8 +2,8 @@ import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
 import { getPlayManager } from "./lib/playManager"
 import { getV2BridgePlayer } from "./lib/v2BridgePlayer"
-import type { V2BridgePlayer } from "./types/nativePlayer"
 import type { PlayManager } from "./types/playManager"
+import type { V2BridgePlayer } from "./types/v2BridgePlayer"
 
 const v2BridgePlayer = getV2BridgePlayer()
 const playManager = getPlayManager()
