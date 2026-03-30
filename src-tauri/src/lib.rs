@@ -26,6 +26,10 @@ struct PlaybackState {
     is_playing: bool,
     /// Current playback position in milliseconds (from `Sound.currentTime()`).
     position_ms: f64,
+    /// Precomputed Discord `start` timestamp (Unix seconds).
+    /// Computed once when playback transitions from paused → playing, and on seek.
+    /// Not updated on checkpoint `play` events (true → true) to avoid timer resets.
+    discord_start_s: Option<i64>,
 }
 
 /// Managed state holding the last known playback state. `None` when nothing is playing.
@@ -171,7 +175,7 @@ fn update_discord_presence(
     client: &mut DiscordIpcClient,
     attrs: &SoundAttributes,
     is_playing: bool,
-    position_ms: f64,
+    discord_start_s: Option<i64>,
 ) -> bool {
     let title = attrs.title.as_deref().unwrap_or("");
     let artist = attrs
@@ -227,15 +231,11 @@ fn update_discord_presence(
     }
 
     if is_playing {
-        // Discord RPC timestamps are in milliseconds since Unix epoch.
-        let now_ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_millis() as i64;
-        let start = now_ms - position_ms as i64;
-        let full_duration_ms = attrs.full_duration.unwrap_or(0) as i64;
-        let end = start + full_duration_ms;
-        act = act.timestamps(activity::Timestamps::new().start(start).end(end));
+        if let Some(start) = discord_start_s {
+            let full_duration_s = attrs.full_duration.unwrap_or(0) as i64 / 1000;
+            let end = start + full_duration_s;
+            act = act.timestamps(activity::Timestamps::new().start(start).end(end));
+        }
     }
 
     if !permalink_url.is_empty() {
@@ -260,11 +260,11 @@ fn set_discord_presence(
     discord: &DiscordState,
     attrs: &SoundAttributes,
     is_playing: bool,
-    position_ms: f64,
+    discord_start_s: Option<i64>,
 ) {
     if let Ok(mut guard) = discord.0.lock() {
         let failed = if let Some(client) = guard.as_mut() {
-            !update_discord_presence(client, attrs, is_playing, position_ms)
+            !update_discord_presence(client, attrs, is_playing, discord_start_s)
         } else {
             false
         };
@@ -312,6 +312,7 @@ async fn event_change_current_sound(
         attributes,
         is_playing: false,
         position_ms: 0.0,
+        discord_start_s: None,
     };
 
     {
@@ -319,7 +320,7 @@ async fn event_change_current_sound(
         *guard = Some(new_state.clone());
     }
 
-    set_discord_presence(&discord, &new_state.attributes, false, 0.0);
+    set_discord_presence(&discord, &new_state.attributes, false, None);
 
     Ok(())
 }
@@ -341,13 +342,33 @@ async fn event_playback_state_changed(
     let current_sound = app.state::<CurrentSoundState>();
     let pause_timeout = app.state::<PauseTimeoutHandle>();
 
-    // Update the in-memory state; capture the attributes for the presence update.
-    let attrs_opt = {
+    // Update the in-memory state; capture the attributes and start timestamp for the presence update.
+    let presence_opt = {
         let mut guard = current_sound.0.lock().unwrap();
         if let Some(ref mut state) = *guard {
+            let was_playing = state.is_playing;
             state.is_playing = is_playing;
             state.position_ms = position_ms;
-            Some(state.attributes.clone())
+
+            // Only (re)compute discord_start_s when transitioning from paused → playing.
+            // Checkpoint events arrive as true → true; we leave start unchanged to prevent
+            // the Discord timer from resetting every 15 seconds.
+            if is_playing && !was_playing {
+                let now_s = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs() as i64;
+                // If position is very small (< 2 s) this is a fresh track start; treat as 0
+                // to avoid a 1-second bias from the audio engine having already buffered ahead.
+                let position_s = if position_ms < 2000.0 {
+                    0
+                } else {
+                    (position_ms / 1000.0) as i64
+                };
+                state.discord_start_s = Some(now_s - position_s);
+            }
+
+            Some((state.attributes.clone(), state.discord_start_s))
         } else {
             None
         }
@@ -384,8 +405,8 @@ async fn event_playback_state_changed(
     }
 
     // Update Discord presence.
-    if let Some(attrs) = attrs_opt {
-        set_discord_presence(&discord, &attrs, is_playing, position_ms);
+    if let Some((attrs, discord_start_s)) = presence_opt {
+        set_discord_presence(&discord, &attrs, is_playing, discord_start_s);
     }
 
     Ok(())
@@ -400,19 +421,27 @@ async fn event_seeked(
     let position_ms = position_ms.unwrap_or(0.0);
     println!("Seeked to: {position_ms:.0}ms");
 
-    // Update position; capture state for the presence update.
+    // Update position and recompute start timestamp; capture state for the presence update.
     let state_opt = {
         let mut guard = current_sound.0.lock().unwrap();
         if let Some(ref mut state) = *guard {
             state.position_ms = position_ms;
-            Some((state.attributes.clone(), state.is_playing))
+            if state.is_playing {
+                let now_s = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs() as i64;
+                let position_s = (position_ms / 1000.0) as i64;
+                state.discord_start_s = Some(now_s - position_s);
+            }
+            Some((state.attributes.clone(), state.is_playing, state.discord_start_s))
         } else {
             None
         }
     };
 
-    if let Some((attrs, is_playing)) = state_opt {
-        set_discord_presence(&discord, &attrs, is_playing, position_ms);
+    if let Some((attrs, is_playing, discord_start_s)) = state_opt {
+        set_discord_presence(&discord, &attrs, is_playing, discord_start_s);
     }
 
     Ok(())
@@ -479,7 +508,7 @@ pub fn run() {
                             &mut client,
                             &state.attributes,
                             state.is_playing,
-                            state.position_ms,
+                            state.discord_start_s,
                         );
                     }
 
