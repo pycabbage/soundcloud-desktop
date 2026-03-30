@@ -1,5 +1,7 @@
 use std::collections::HashMap;
-use std::time::{SystemTime, UNIX_EPOCH};
+
+
+use tracing::{debug, error, info, warn};
 
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
 use serde::Deserialize;
@@ -26,10 +28,6 @@ struct PlaybackState {
     is_playing: bool,
     /// Current playback position in milliseconds (from `Sound.currentTime()`).
     position_ms: f64,
-    /// Precomputed Discord `start` timestamp (Unix seconds).
-    /// Computed once when playback transitions from paused → playing, and on seek.
-    /// Not updated on checkpoint `play` events (true → true) to avoid timer resets.
-    discord_start_s: Option<i64>,
 }
 
 /// Managed state holding the last known playback state. `None` when nothing is playing.
@@ -154,6 +152,12 @@ struct SoundAttributes {
 
 // ─── Discord helpers ──────────────────────────────────────────────────────────
 
+/// Format a duration given in milliseconds as `M:SS` (e.g. `"3:07"`).
+fn format_duration_ms(ms: f64) -> String {
+    let total_s = (ms.max(0.0) / 1000.0) as i64;
+    format!("{}:{:02}", total_s / 60, total_s % 60)
+}
+
 /// Clamp text to Discord's 128-character limit. Pads to the required 2-character minimum.
 fn truncate_discord_text(s: &str) -> String {
     let s = s.trim();
@@ -175,7 +179,7 @@ fn update_discord_presence(
     client: &mut DiscordIpcClient,
     attrs: &SoundAttributes,
     is_playing: bool,
-    discord_start_s: Option<i64>,
+    position_ms: f64,
 ) -> bool {
     let title = attrs.title.as_deref().unwrap_or("");
     let artist = attrs
@@ -185,8 +189,22 @@ fn update_discord_presence(
         .unwrap_or("");
 
     let details = truncate_discord_text(title);
-    // State always shows the artist name so it is always a clickable link.
-    let state_text = truncate_discord_text(artist);
+    // State shows current playback position as text.
+    let position_str = format_duration_ms(position_ms);
+    let duration_str = attrs
+        .full_duration
+        .map(|d| format_duration_ms(d as f64))
+        .unwrap_or_default();
+    let state_text = if is_playing {
+        if duration_str.is_empty() {
+            position_str
+        } else {
+            format!("{position_str} / {duration_str}")
+        }
+    } else {
+        "⏸".to_string()
+    };
+    let state_text = truncate_discord_text(&state_text);
 
     // Upgrade thumbnail from the small 100×100 variant to 500×500.
     let image_url: Option<String> = attrs
@@ -211,31 +229,13 @@ fn update_discord_presence(
     if !permalink_url.is_empty() {
         act = act.details_url(permalink_url);
     }
-    if !artist_url.is_empty() {
-        act = act.state_url(artist_url);
-    }
-
-    // large_text is only shown when paused (renders as visible label line in Discord's
-    // Listening card). During playback it is omitted to avoid a duplicate artist line.
-    let pause_text = if !is_playing {
-        Some(truncate_discord_text("⏸"))
-    } else {
-        None
-    };
+    // large_text always shows the artist name.
+    let artist_label = truncate_discord_text(artist);
     if let Some(ref url) = image_url {
-        let mut assets = activity::Assets::new().large_image(url);
-        if let Some(ref text) = pause_text {
-            assets = assets.large_text(text);
-        }
+        let assets = activity::Assets::new()
+            .large_image(url)
+            .large_text(&artist_label);
         act = act.assets(assets);
-    }
-
-    if is_playing {
-        if let Some(start) = discord_start_s {
-            let full_duration_s = attrs.full_duration.unwrap_or(0) as i64 / 1000;
-            let end = start + full_duration_s;
-            act = act.timestamps(activity::Timestamps::new().start(start).end(end));
-        }
     }
 
     if !permalink_url.is_empty() {
@@ -245,10 +245,19 @@ fn update_discord_presence(
         )]);
     }
 
+    debug!(
+        title,
+        artist,
+        is_playing,
+        position_ms,
+        state_text,
+        "update_discord_presence: calling set_activity"
+    );
+
     match client.set_activity(act) {
         Ok(()) => true,
         Err(e) => {
-            eprintln!("Discord presence update error: {e}");
+            error!(error = %e, "discord presence update failed");
             false
         }
     }
@@ -260,11 +269,11 @@ fn set_discord_presence(
     discord: &DiscordState,
     attrs: &SoundAttributes,
     is_playing: bool,
-    discord_start_s: Option<i64>,
+    position_ms: f64,
 ) {
     if let Ok(mut guard) = discord.0.lock() {
         let failed = if let Some(client) = guard.as_mut() {
-            !update_discord_presence(client, attrs, is_playing, discord_start_s)
+            !update_discord_presence(client, attrs, is_playing, position_ms)
         } else {
             false
         };
@@ -289,10 +298,12 @@ async fn event_change_current_sound(
     {
         let mut map = pending.0.lock().await;
         let title = attributes.title.clone().unwrap_or_default();
-        println!(
-            "Received result for request {}: {}",
-            request_id.unwrap_or(0),
-            title
+        let track_id = attributes.id;
+        info!(
+            title,
+            track_id,
+            request_id,
+            "event: change_current_sound"
         );
         if let Some(tx) = map.remove(&request_id.unwrap_or(0)) {
             let _ = tx.send(title);
@@ -312,7 +323,6 @@ async fn event_change_current_sound(
         attributes,
         is_playing: false,
         position_ms: 0.0,
-        discord_start_s: None,
     };
 
     {
@@ -320,7 +330,7 @@ async fn event_change_current_sound(
         *guard = Some(new_state.clone());
     }
 
-    set_discord_presence(&discord, &new_state.attributes, false, None);
+    set_discord_presence(&discord, &new_state.attributes, false, 0.0);
 
     Ok(())
 }
@@ -332,17 +342,12 @@ async fn event_playback_state_changed(
     position_ms: Option<f64>,
 ) -> Result<(), String> {
     let position_ms = position_ms.unwrap_or(0.0);
-    if is_playing {
-        println!("Playback: playing at {position_ms:.0}ms");
-    } else {
-        println!("Playback: paused at {position_ms:.0}ms");
-    }
 
     let discord = app.state::<DiscordState>();
     let current_sound = app.state::<CurrentSoundState>();
     let pause_timeout = app.state::<PauseTimeoutHandle>();
 
-    // Update the in-memory state; capture the attributes and start timestamp for the presence update.
+    // Update the in-memory state; capture the attributes for the presence update.
     let presence_opt = {
         let mut guard = current_sound.0.lock().unwrap();
         if let Some(ref mut state) = *guard {
@@ -350,26 +355,23 @@ async fn event_playback_state_changed(
             state.is_playing = is_playing;
             state.position_ms = position_ms;
 
-            // Only (re)compute discord_start_s when transitioning from paused → playing.
-            // Checkpoint events arrive as true → true; we leave start unchanged to prevent
-            // the Discord timer from resetting every 15 seconds.
-            if is_playing && !was_playing {
-                let now_s = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs() as i64;
-                // If position is very small (< 2 s) this is a fresh track start; treat as 0
-                // to avoid a 1-second bias from the audio engine having already buffered ahead.
-                let position_s = if position_ms < 2000.0 {
-                    0
-                } else {
-                    (position_ms / 1000.0) as i64
-                };
-                state.discord_start_s = Some(now_s - position_s);
-            }
+            let transition_kind = match (was_playing, is_playing) {
+                (false, true)  => "paused→playing",
+                (true,  false) => "playing→paused",
+                (true,  true)  => "playing→playing (checkpoint?)",
+                (false, false) => "paused→paused",
+            };
+            info!(
+                was_playing,
+                is_playing,
+                position_ms,
+                transition = transition_kind,
+                "event: playback_state_changed"
+            );
 
-            Some((state.attributes.clone(), state.discord_start_s))
+            Some((state.attributes.clone(), position_ms))
         } else {
+            warn!(is_playing, position_ms, "event: playback_state_changed — no current sound in state");
             None
         }
     };
@@ -391,9 +393,9 @@ async fn event_playback_state_changed(
                 if let Ok(mut guard) = discord.0.lock() {
                     if let Some(client) = guard.as_mut() {
                         match client.clear_activity() {
-                            Ok(()) => println!("Discord presence cleared after pause timeout"),
+                            Ok(()) => info!("discord presence cleared after pause timeout"),
                             Err(e) => {
-                                eprintln!("Discord clear activity error: {e}");
+                                error!(error = %e, "discord clear activity failed");
                                 *guard = None;
                             }
                         }
@@ -405,8 +407,8 @@ async fn event_playback_state_changed(
     }
 
     // Update Discord presence.
-    if let Some((attrs, discord_start_s)) = presence_opt {
-        set_discord_presence(&discord, &attrs, is_playing, discord_start_s);
+    if let Some((attrs, pos_ms)) = presence_opt {
+        set_discord_presence(&discord, &attrs, is_playing, pos_ms);
     }
 
     Ok(())
@@ -419,7 +421,6 @@ async fn event_seeked(
     current_sound: State<'_, CurrentSoundState>,
 ) -> Result<(), String> {
     let position_ms = position_ms.unwrap_or(0.0);
-    println!("Seeked to: {position_ms:.0}ms");
 
     // Update position and recompute start timestamp; capture state for the presence update.
     let state_opt = {
@@ -427,21 +428,19 @@ async fn event_seeked(
         if let Some(ref mut state) = *guard {
             state.position_ms = position_ms;
             if state.is_playing {
-                let now_s = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .unwrap_or_default()
-                    .as_secs() as i64;
-                let position_s = (position_ms / 1000.0) as i64;
-                state.discord_start_s = Some(now_s - position_s);
+                info!(position_ms, "event: seeked (playing)");
+            } else {
+                info!(position_ms, "event: seeked (paused)");
             }
-            Some((state.attributes.clone(), state.is_playing, state.discord_start_s))
+            Some((state.attributes.clone(), state.is_playing, position_ms))
         } else {
+            warn!(position_ms, "event: seeked — no current sound in state");
             None
         }
     };
 
-    if let Some((attrs, is_playing, discord_start_s)) = state_opt {
-        set_discord_presence(&discord, &attrs, is_playing, discord_start_s);
+    if let Some((attrs, is_playing, pos_ms)) = state_opt {
+        set_discord_presence(&discord, &attrs, is_playing, pos_ms);
     }
 
     Ok(())
@@ -453,11 +452,11 @@ pub fn run() {
         let mut client = DiscordIpcClient::new(DISCORD_APP_ID);
         match client.connect() {
             Ok(()) => {
-                println!("Discord Rich Presence connected");
+                info!("discord rich presence connected");
                 DiscordState(std::sync::Mutex::new(Some(client)))
             }
             Err(e) => {
-                eprintln!("Failed to connect to Discord: {e}");
+                warn!(error = %e, "failed to connect to discord (will retry)");
                 DiscordState(std::sync::Mutex::new(None))
             }
         }
@@ -493,7 +492,7 @@ pub fn run() {
                         continue;
                     }
 
-                    println!("Discord Rich Presence reconnected");
+                    info!("discord rich presence reconnected");
 
                     // Restore the last known presence after reconnecting.
                     let state_opt = app_handle
@@ -508,7 +507,7 @@ pub fn run() {
                             &mut client,
                             &state.attributes,
                             state.is_playing,
-                            state.discord_start_s,
+                            state.position_ms,
                         );
                     }
 
@@ -530,7 +529,7 @@ pub fn run() {
                 .on_new_window({
                     let app_handle = app.handle().clone();
                     move |url, features| {
-                        println!("New window requested: {}", url);
+                        debug!(url = %url, "new window requested");
 
                         let new_window = tauri::WebviewWindowBuilder::new(
                             &app_handle,
@@ -599,10 +598,10 @@ pub fn run() {
                 app.exit(0);
             }
             "dbg_get_song_title" => {
-                println!("Requesting song title from JS...");
+                info!("requesting song title from js");
                 let app = app.clone();
                 tauri::async_runtime::spawn(async move {
-                    println!("Generating request ID and waiting for response...");
+                    debug!("generating request id and waiting for response");
 
                     let request_id: u32 = rand::random();
                     let (tx, rx) = oneshot::channel::<String>();
@@ -616,13 +615,13 @@ pub fn run() {
                         "get-song-title",
                         serde_json::json!({ "requestId": request_id }),
                     ) {
-                        eprintln!("emit error: {e}");
+                        error!(error = %e, "emit error");
                         return;
                     }
 
                     match rx.await {
-                        Ok(result) => println!("Got song title: {result}"),
-                        Err(e) => eprintln!("oneshot recv error: {e}"),
+                        Ok(result) => info!(title = %result, "got song title"),
+                        Err(e) => error!(error = %e, "oneshot recv error"),
                     }
                 });
             }
