@@ -11,8 +11,8 @@ use tokio::sync::Mutex;
 use tracing::{info, warn};
 
 use commands::{event_change_current_sound, event_playback_state_changed, event_seeked};
-use discord::DISCORD_APP_ID;
-use models::{CurrentSoundState, DiscordState, PauseTimeoutHandle, PendingRequests};
+use discord::{CurrentSoundState, DiscordState, PauseTimeoutHandle, DISCORD_APP_ID};
+use models::PendingRequests;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

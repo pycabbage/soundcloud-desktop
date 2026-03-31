@@ -1,12 +1,26 @@
-use discord_rich_presence::DiscordIpc;
 use tauri::{Manager, State};
-use tracing::{error, info, warn};
+use tracing::info;
 
-use crate::discord::{set_discord_presence, DISCORD_PAUSE_TIMEOUT_SECS};
-use crate::models::{
-    CurrentSoundState, DiscordState, PauseTimeoutHandle, PendingRequests, PlaybackState,
-    SoundAttributes,
+use crate::discord::{
+    handle_playback_changed, handle_seeked, handle_track_changed, CurrentSoundState, DiscordState,
+    PauseTimeoutHandle,
 };
+use crate::models::{PendingRequests, SoundAttributes};
+
+/// Resolve a pending debug request by sending the track title to the waiting oneshot.
+async fn resolve_pending_request(
+    pending: &PendingRequests,
+    request_id: Option<u32>,
+    attributes: &SoundAttributes,
+) {
+    let mut map = pending.0.lock().await;
+    let title = attributes.title.clone().unwrap_or_default();
+    let track_id = attributes.id;
+    info!(title, track_id, request_id, "event: change_current_sound");
+    if let Some(tx) = map.remove(&request_id.unwrap_or(0)) {
+        let _ = tx.send(title);
+    }
+}
 
 #[tauri::command]
 pub async fn event_change_current_sound(
@@ -17,44 +31,8 @@ pub async fn event_change_current_sound(
     current_sound: State<'_, CurrentSoundState>,
     pause_timeout: State<'_, PauseTimeoutHandle>,
 ) -> Result<(), String> {
-    // Resolve any pending debug request.
-    {
-        let mut map = pending.0.lock().await;
-        let title = attributes.title.clone().unwrap_or_default();
-        let track_id = attributes.id;
-        info!(
-            title,
-            track_id,
-            request_id,
-            "event: change_current_sound"
-        );
-        if let Some(tx) = map.remove(&request_id.unwrap_or(0)) {
-            let _ = tx.send(title);
-        }
-    }
-
-    // A new track cancels any active pause timeout.
-    {
-        let mut handle_guard = pause_timeout.0.lock().unwrap();
-        if let Some(handle) = handle_guard.take() {
-            handle.abort();
-        }
-    }
-
-    // New track: default to not playing; the subsequent play event will update the state.
-    let new_state = PlaybackState {
-        attributes,
-        is_playing: false,
-        position_ms: 0.0,
-    };
-
-    {
-        let mut guard = current_sound.0.lock().unwrap();
-        *guard = Some(new_state.clone());
-    }
-
-    set_discord_presence(&discord, &new_state.attributes, false, 0.0);
-
+    resolve_pending_request(&pending, request_id, &attributes).await;
+    handle_track_changed(&discord, &current_sound, &pause_timeout, attributes);
     Ok(())
 }
 
@@ -70,73 +48,14 @@ pub async fn event_playback_state_changed(
     let current_sound = app.state::<CurrentSoundState>();
     let pause_timeout = app.state::<PauseTimeoutHandle>();
 
-    // Update the in-memory state; capture the attributes for the presence update.
-    let presence_opt = {
-        let mut guard = current_sound.0.lock().unwrap();
-        if let Some(ref mut state) = *guard {
-            let was_playing = state.is_playing;
-            state.is_playing = is_playing;
-            state.position_ms = position_ms;
-
-            let transition_kind = match (was_playing, is_playing) {
-                (false, true) => "paused→playing",
-                (true, false) => "playing→paused",
-                (true, true) => "playing→playing (checkpoint?)",
-                (false, false) => "paused→paused",
-            };
-            info!(
-                was_playing,
-                is_playing,
-                position_ms,
-                transition = transition_kind,
-                "event: playback_state_changed"
-            );
-
-            Some((state.attributes.clone(), position_ms))
-        } else {
-            warn!(
-                is_playing,
-                position_ms,
-                "event: playback_state_changed — no current sound in state"
-            );
-            None
-        }
-    };
-
-    // Manage the pause-timeout task.
-    {
-        let mut handle_guard = pause_timeout.0.lock().unwrap();
-        // Always cancel the existing task first.
-        if let Some(handle) = handle_guard.take() {
-            handle.abort();
-        }
-        // Spawn a new timeout only when pausing.
-        if !is_playing {
-            let app_clone = app.clone();
-            let handle = tokio::spawn(async move {
-                tokio::time::sleep(std::time::Duration::from_secs(DISCORD_PAUSE_TIMEOUT_SECS))
-                    .await;
-                let discord = app_clone.state::<DiscordState>();
-                if let Ok(mut guard) = discord.0.lock() {
-                    if let Some(client) = guard.as_mut() {
-                        match client.clear_activity() {
-                            Ok(()) => info!("discord presence cleared after pause timeout"),
-                            Err(e) => {
-                                error!(error = %e, "discord clear activity failed");
-                                *guard = None;
-                            }
-                        }
-                    }
-                };
-            });
-            *handle_guard = Some(handle);
-        }
-    }
-
-    // Update Discord presence.
-    if let Some((attrs, pos_ms)) = presence_opt {
-        set_discord_presence(&discord, &attrs, is_playing, pos_ms);
-    }
+    handle_playback_changed(
+        &discord,
+        &current_sound,
+        &pause_timeout,
+        is_playing,
+        position_ms,
+        app.clone(),
+    );
 
     Ok(())
 }
@@ -149,26 +68,87 @@ pub async fn event_seeked(
 ) -> Result<(), String> {
     let position_ms = position_ms.unwrap_or(0.0);
 
-    // Update position and recompute start timestamp; capture state for the presence update.
-    let state_opt = {
-        let mut guard = current_sound.0.lock().unwrap();
-        if let Some(ref mut state) = *guard {
-            state.position_ms = position_ms;
-            if state.is_playing {
-                info!(position_ms, "event: seeked (playing)");
-            } else {
-                info!(position_ms, "event: seeked (paused)");
-            }
-            Some((state.attributes.clone(), state.is_playing, position_ms))
-        } else {
-            warn!(position_ms, "event: seeked — no current sound in state");
-            None
-        }
-    };
-
-    if let Some((attrs, is_playing, pos_ms)) = state_opt {
-        set_discord_presence(&discord, &attrs, is_playing, pos_ms);
-    }
+    handle_seeked(&discord, &current_sound, position_ms);
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use tokio::sync::{oneshot, Mutex};
+
+    use crate::models::{PendingRequests, SoundAttributes};
+
+    use super::resolve_pending_request;
+
+    fn make_empty_attrs() -> SoundAttributes {
+        SoundAttributes {
+            id: None, kind: None, monetization_model: None, policy: None,
+            artwork_url: None, caption: None, commentable: None, comment_count: None,
+            created_at: None, description: None, display_date: None,
+            downloadable: None, download_count: None, duration: None,
+            embeddable_by: None, full_duration: None, genre: None,
+            has_downloads_left: None, label_name: None, last_modified: None,
+            license: None, likes_count: None, media: None, permalink: None,
+            permalink_url: None, playback_count: None, public: None,
+            publisher_metadata: None, purchase_title: None, purchase_url: None,
+            release_date: None, reposts_count: None, secret_token: None,
+            sharing: None, state: None, station_permalink: None, station_urn: None,
+            streamable: None, tag_list: None, title: None,
+            track_authorization: None, uri: None, urn: None, user: None,
+            user_id: None, visuals: None, waveform_url: None,
+        }
+    }
+
+    #[tokio::test]
+    async fn resolve_matching_request() {
+        let (tx, rx) = oneshot::channel::<String>();
+        let mut map = HashMap::new();
+        map.insert(42u32, tx);
+        let pending = PendingRequests(Mutex::new(map));
+
+        let mut attrs = make_empty_attrs();
+        attrs.title = Some("Test Song".to_string());
+
+        resolve_pending_request(&pending, Some(42), &attrs).await;
+
+        let result = rx.await.unwrap();
+        assert_eq!(result, "Test Song");
+        assert!(pending.0.lock().await.is_empty());
+    }
+
+    #[tokio::test]
+    async fn resolve_no_matching_request() {
+        let (tx, _rx) = oneshot::channel::<String>();
+        let mut map = HashMap::new();
+        map.insert(42u32, tx);
+        let pending = PendingRequests(Mutex::new(map));
+
+        let attrs = make_empty_attrs();
+
+        // request_id 99 does not match 42
+        resolve_pending_request(&pending, Some(99), &attrs).await;
+
+        // The map still has the entry for 42
+        assert!(pending.0.lock().await.contains_key(&42));
+    }
+
+    #[tokio::test]
+    async fn resolve_none_request_id() {
+        let (tx, rx) = oneshot::channel::<String>();
+        let mut map = HashMap::new();
+        // key 0 matches request_id None (unwrap_or(0))
+        map.insert(0u32, tx);
+        let pending = PendingRequests(Mutex::new(map));
+
+        let mut attrs = make_empty_attrs();
+        attrs.title = Some("Fallback".to_string());
+
+        resolve_pending_request(&pending, None, &attrs).await;
+
+        let result = rx.await.unwrap();
+        assert_eq!(result, "Fallback");
+    }
 }

@@ -1,11 +1,11 @@
+#![allow(dead_code)]
+
 use std::collections::HashMap;
 
-use discord_rich_presence::DiscordIpcClient;
 use serde::Deserialize;
 use tokio::sync::{oneshot, Mutex};
 
 pub struct PendingRequests(pub Mutex<HashMap<u32, oneshot::Sender<String>>>);
-pub struct DiscordState(pub std::sync::Mutex<Option<DiscordIpcClient>>);
 
 /// Snapshot of the currently playing track and its playback state.
 #[derive(Clone)]
@@ -15,13 +15,6 @@ pub struct PlaybackState {
     /// Current playback position in milliseconds (from `Sound.currentTime()`).
     pub position_ms: f64,
 }
-
-/// Managed state holding the last known playback state. `None` when nothing is playing.
-pub struct CurrentSoundState(pub std::sync::Mutex<Option<PlaybackState>>);
-
-/// Managed state holding the handle of the active pause-timeout task.
-/// Aborted when playback resumes or a new track starts.
-pub struct PauseTimeoutHandle(pub std::sync::Mutex<Option<tokio::task::JoinHandle<()>>>);
 
 // ─── SoundCloud model types ───────────────────────────────────────────────────
 
