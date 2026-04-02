@@ -16,22 +16,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
-      - name: Install Tauri CLI
-        run: |
-          sudo apt update
-          sudo apt install -y \
-            libwebkit2gtk-4.1-dev \
-            build-essential \
-            curl \
-            wget \
-            file \
-            libxdo-dev \
-            libssl-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev
-          sh <(curl https://create.tauri.app/sh) -- -y
-      - name: Build
-        run: cargo tauri build --no-bundle
       - name: Run tests
         working-directory: src-tauri
         run: cargo test --all-features
