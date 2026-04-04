@@ -6,7 +6,7 @@
   "build": {
     "removeUnusedCommands": true,
     "additionalWatchFolders": [
-      "../packages/inject"
+      "../packages/inject/dist"
     ],
     "beforeDevCommand": "cd packages/inject && bun run build",
     "beforeBuildCommand": "cd packages/inject && bun run build"

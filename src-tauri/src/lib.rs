@@ -42,7 +42,6 @@ pub fn run() {
         .manage(discord_state)
         .manage(CurrentSoundState(std::sync::Mutex::new(None)))
         .manage(PauseTimeoutHandle(std::sync::Mutex::new(None)))
-        .plugin(tauri_plugin_media::init())
         .plugin(tauri_plugin_opener::init())
         .setup(tray::setup)
         .on_menu_event(tray::on_menu_event)
