@@ -8,8 +8,8 @@
     "additionalWatchFolders": [
       "../packages/inject/dist"
     ],
-    "beforeDevCommand": "cd packages/inject && bun run build",
-    "beforeBuildCommand": "cd packages/inject && bun run build"
+    "beforeDevCommand": "bun run --filter @soundcloud-desktop/inject build",
+    "beforeBuildCommand": "bun run --filter @soundcloud-desktop/inject build"
   },
   "app": {
     "withGlobalTauri": false,

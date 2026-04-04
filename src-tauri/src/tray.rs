@@ -99,3 +99,16 @@ pub fn on_window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
         window.hide().unwrap();
     }
 }
+
+pub fn update_tray_tooltip(app: &tauri::AppHandle, title: &str, artist: &str) {
+    if let Some(tray) = app.tray_by_id("main") {
+        let tooltip = format!("Soundcloud Desktop: {} - {}", title, artist);
+        let _ = tray.set_tooltip(Some(&tooltip));
+    }
+}
+
+pub fn reset_tray_tooltip(app: &tauri::AppHandle) {
+    if let Some(tray) = app.tray_by_id("main") {
+        let _ = tray.set_tooltip(Some("Soundcloud Desktop"));
+    }
+}

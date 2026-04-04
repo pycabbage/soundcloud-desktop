@@ -11,6 +11,7 @@ use crate::models::{PlaybackPrefs, SoundAttributes};
 
 #[tauri::command]
 pub async fn event_change_current_sound(
+    app: tauri::AppHandle,
     attributes: SoundAttributes,
     discord: State<'_, DiscordState>,
     current_sound: State<'_, CurrentSoundState>,
@@ -19,7 +20,14 @@ pub async fn event_change_current_sound(
     let title = attributes.title.clone().unwrap_or_default();
     let track_id = attributes.id;
     info!(title, track_id, "event: change_current_sound");
-    handle_track_changed(&discord, &current_sound, &pause_timeout, attributes);
+    handle_track_changed(&discord, &current_sound, &pause_timeout, attributes.clone());
+    let title = attributes.title.as_deref().unwrap_or("Unknown");
+    let artist = attributes
+        .user
+        .as_ref()
+        .and_then(|u| u.username.as_deref())
+        .unwrap_or("Unknown Artist");
+    crate::tray::update_tray_tooltip(&app, title, artist);
     Ok(())
 }
 
@@ -72,6 +80,23 @@ pub async fn post_init(app: tauri::AppHandle) -> Result<PlaybackPrefs, String> {
         .and_then(|v| v.as_str().map(String::from))
         .unwrap_or_else(|| "none".to_string());
     info!(shuffle, repeat_mode, "event: post_init");
+    let current_sound_state = app.state::<CurrentSoundState>();
+    let sound_state = current_sound_state.0.lock().unwrap();
+    let tooltip_info = sound_state.as_ref().map(|state| {
+        let title = state.attributes.title.as_deref().unwrap_or("Unknown");
+        let artist = state
+            .attributes
+            .user
+            .as_ref()
+            .and_then(|u| u.username.as_deref())
+            .unwrap_or("Unknown Artist");
+        (title.to_string(), artist.to_string())
+    });
+    drop(sound_state);
+    match tooltip_info {
+        Some((title, artist)) => crate::tray::update_tray_tooltip(&app, &title, &artist),
+        None => crate::tray::reset_tray_tooltip(&app),
+    }
     Ok(PlaybackPrefs {
         shuffle,
         repeat_mode,
