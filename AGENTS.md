@@ -47,24 +47,17 @@ cargo fmt
 # Lint Rust code
 cargo clippy
 
-# Run Rust tests (no tests currently exist)
-cargo test
-```
-
-### No Test Suite
-
-There is currently **no test framework** configured for TypeScript. There are no test files.
-If tests are added, Bun's built-in test runner is the expected choice:
-
-```bash
 # Run all tests
-bun test
+cargo test --lib
 
-# Run a single test file
-bun test packages/inject/src/lib/debounce.test.ts
+# Run a single test by name
+cargo test --lib -- test_name
 
-# Run tests matching a pattern
-bun test --test-name-pattern "debounce"
+# Run tests in a specific module
+cargo test --lib -- discord_tests
+
+# Run a specific test function
+cargo test --lib -- truncate_discord_text
 ```
 
 ---
@@ -74,28 +67,65 @@ bun test --test-name-pattern "debounce"
 ```
 soundcloud-desktop/
 ├── packages/
-│   └── inject/            # TypeScript injection script
+│   └── inject/               # TypeScript injection script
 │       ├── src/
-│       │   ├── index.ts   # Entry point — bootstraps everything after page load
-│       │   └── lib/
-│       │       ├── debounce.ts      # Throttle/debounce utilities
-│       │       ├── nativePlayer.ts  # SoundCloud NativePlayer type + accessor
-│       │       ├── playManager.ts   # SoundCloud PlayManager type + accessor
-│       │       ├── utils.ts         # panic() utility
-│       │       └── webpack.ts       # Webpack chunk module finder
-│       ├── scripts/
-│       │   └── build.ts   # Bun.build() config — IIFE bundle for browser
-│       ├── dist/          # Build output (committed; loaded by Tauri at runtime)
-│       ├── biome.json     # Linter/formatter config
+│       │   ├── index.ts       # Entry point
+│       │   ├── lib/           # Utilities (debounce, playManager, utils, webpack)
+│       │   └── types/        # SoundCloud internal type definitions
+│       ├── scripts/build.ts   # Bun.build() config — IIFE bundle
+│       ├── dist/              # Build output (committed)
+│       ├── biome.json         # Linter/formatter config
 │       └── tsconfig.json
 └── src-tauri/
     ├── src/
-    │   ├── main.rs        # Windows subsystem entry point
-    │   └── lib.rs         # All app logic: window setup, media key handling, IPC
-    ├── capabilities/
-    │   └── default.json   # Tauri permissions
-    └── tauri.conf.json    # Tauri app configuration
+    │   ├── main.rs           # Windows subsystem entry point
+    │   ├── lib.rs            # App bootstrap: window, state, IPC handlers
+    │   ├── commands.rs       # Tauri command handlers (thin delegation layer)
+    │   ├── commands_tests.rs # Tests for commands (#[path] pattern)
+    │   ├── discord.rs        # Discord Rich Presence — 3-layer architecture
+    │   ├── discord_tests.rs  # Tests for discord module (#[path] pattern)
+    │   ├── models.rs         # Data models (SoundAttributes, PlaybackState)
+    │   └── tray.rs           # System tray handling
+    ├── capabilities/          # Tauri permissions
+    └── tauri.conf.json       # Tauri app configuration
 ```
+
+---
+
+## Test File Organization
+
+Rust tests are in separate `*_tests.rs` files using the `#[path]` attribute pattern:
+
+```rust
+// At end of discord.rs
+#[cfg(test)]
+#[path = "discord_tests.rs"]
+mod tests;
+```
+
+This keeps test code physically separate while maintaining access to private functions
+via `use super::*;`. Do not inline tests in source files.
+
+---
+
+## Rust Architecture: discord.rs (3-Layer)
+
+The `discord.rs` module uses a clear separation of concerns:
+
+1. **Layer A — Pure functions** (testable, no side effects):
+   - `truncate_discord_text()`, `PresenceFields::from_attributes()`, `build_activity()`
+   - State mutation helpers: `apply_track_change()`, `apply_playback_change()`, `apply_seek()`
+
+2. **Layer B — Discord IPC operations**:
+   - `send_presence()`, `clear_presence()`, `update_presence_locked()`
+   - Handle Discord client connection, mark `None` on failure for reconnect
+
+3. **Layer C — Event handlers** (public API called from commands.rs):
+   - `handle_track_changed()`, `handle_playback_changed()`, `handle_seeked()`
+   - Manage state updates, pause timeouts, presence updates
+
+When adding new functionality, place it in the appropriate layer.
+Functions in Layer A should be pure and unit-testable.
 
 ---
 
@@ -103,104 +133,53 @@ soundcloud-desktop/
 
 ### Formatter (Biome)
 
-- **Indentation**: 2 spaces
-- **Quotes**: Double quotes (`"`)
-- **Semicolons**: Omit when not required (`"asNeeded"`)
-- **Trailing commas**: ES5 style (objects and arrays)
-- **Import organization**: Automatic via Biome assist (`organizeImports: "on"`)
-
-Run `bunx biome check --write` to auto-format and fix lint issues.
-
-### TypeScript Configuration
-
-Key compiler options (`tsconfig.json`):
-- `strict: true` — all strict checks enabled
-- `verbatimModuleSyntax: true` — type-only imports **must** use `import type`
-- `noUncheckedIndexedAccess: true` — array indexing returns `T | undefined`
-- `noImplicitOverride: true` — `override` keyword required in subclasses
-- `moduleResolution: "bundler"` — Bun bundler resolution
+Run `bunx biome check --write` to auto-format. Config in `biome.json`:
+- 2-space indentation, double quotes, semicolons as needed
+- ES5 trailing commas, auto-organize imports
 
 ### Imports
 
-- Use **relative paths with `.ts` extension** for local modules:
-  ```ts
-  import { panic } from "./utils"
-  import { getNativePlayer } from "./lib/nativePlayer"
-  ```
-- Use package name for npm packages:
-  ```ts
-  import { invoke } from "@tauri-apps/api/core"
-  ```
-- Use `import type` for type-only imports (required by `verbatimModuleSyntax`):
-  ```ts
-  import type { NativePlayer } from "./lib/nativePlayer"
-  ```
-- No path aliases (`@/` etc.) — use relative paths only.
+```ts
+// Relative paths with .ts extension for local modules
+import { panic } from "./utils"
+import { getNativePlayer } from "./lib/nativePlayer"
 
-### Naming Conventions
+// Type-only imports MUST use `import type`
+import type { NativePlayer } from "./lib/nativePlayer"
 
-| Construct | Convention | Example |
-|---|---|---|
-| Functions | `camelCase` | `getNativePlayer`, `getModule` |
-| Variables | `camelCase` | `songTitle`, `requestId` |
-| Interfaces / Types | `PascalCase` | `NativePlayer`, `PlayManager` |
-| Files | `camelCase` | `nativePlayer.ts`, `playManager.ts` |
+// No path aliases — use relative paths only
+```
 
 ### Error Handling
 
-Use the `panic()` utility for unrecoverable errors — it throws and returns `never`:
+Use `panic()` for unrecoverable errors; prefer early returns for expected failures.
 
 ```ts
-import { panic } from "./utils"
-
-const player =
-  getPlayerModule() ?? panic("Could not find the player module")
-```
-
-For expected failures, prefer early returns or `undefined` checks with `noUncheckedIndexedAccess`.
-
-### Lint Suppression
-
-Suppress Biome lint rules only when necessary with a targeted comment:
-
-```ts
-// biome-ignore lint/suspicious/noExplicitAny: SoundCloud internal API
-const modules: any = window.__webpack_require__
+const player = getPlayerModule() ?? panic("Could not find player module")
 ```
 
 ---
 
 ## Rust Code Style
 
-Follow standard Rust idioms enforced by `cargo fmt` and `cargo clippy`.
-
-- **Naming**: `snake_case` for variables/functions, `PascalCase` for types/structs
-- **Error handling**: Return `Result<T, String>` from Tauri commands; use `eprintln!` for
-  non-fatal errors; use `match` or `if let` for `Option`/`Result` handling
-- **Async**: Use `tokio` async/await; channels via `tokio::sync::oneshot`
-- **IPC**: Tauri events (`app.emit`, `webview.listen`) for Rust↔JS communication;
-  Tauri commands (`#[tauri::command]`) for JS→Rust calls
-
-Example pattern:
+- `snake_case` for functions/variables, `PascalCase` for types
+- Use `eprintln!` for non-fatal errors (debug builds only)
+- Return `Result<T, String>` from Tauri commands
+- Use `if let` / `match` for Option/Result handling
 
 ```rust
-match rx.await {
-    Ok(result) => println!("Got result: {result}"),
-    Err(e) => eprintln!("Error: {e}"),
-}
+let Some((attrs, pos, was_playing)) = result else {
+    warn!("no current sound in state");
+    return;
+};
 ```
 
 ---
 
 ## Workflow Notes
 
-1. After editing TypeScript sources, always rebuild before testing:
-   ```bash
-   cd packages/inject && bun run build
-   ```
-2. The Tauri dev command (`cargo tauri dev`) runs the inject build automatically via
-   `beforeDevCommand`, so you only need to rebuild manually if iterating on JS alone.
-3. The `dist/index.js` bundle is committed to the repository so the app works without
-   a separate build step for end users.
-4. VSCode recommended extensions: `tauri-apps.tauri-vscode`, `rust-lang.rust-analyzer`,
-   `biomejs.biome`.
+1. After editing TypeScript: `cd packages/inject && bun run build`
+2. After editing Rust: `cargo check --lib` to verify compilation
+3. `cargo tauri dev` auto-builds inject via `beforeDevCommand`
+4. `dist/index.js` is committed — app works without build step for end users
+```

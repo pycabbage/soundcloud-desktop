@@ -3,5 +3,8 @@
   "workspaces": [
     "packages/*"
   ],
-  "private": true
+  "private": true,
+  "dependencies": {
+    "@tauri-apps/plugin-store": "~2"
+  }
 }

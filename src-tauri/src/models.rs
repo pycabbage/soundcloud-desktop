@@ -16,6 +16,12 @@ pub struct PlaybackState {
     pub position_ms: f64,
 }
 
+#[derive(Debug, serde::Serialize)]
+pub struct PlaybackPrefs {
+    pub shuffle: bool,
+    pub repeat_mode: String,
+}
+
 // ─── SoundCloud model types ───────────────────────────────────────────────────
 
 #[derive(Clone, Deserialize)]

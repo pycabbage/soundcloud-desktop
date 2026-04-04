@@ -1,10 +1,9 @@
 use tauri::{
     menu::{Menu, MenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconEvent},
-    webview::PageLoadEvent,
     Emitter, Manager,
 };
-use tauri_plugin_window_state::{AppHandleExt, StateFlags, WindowExt};
+use tauri_plugin_window_state::{StateFlags, WindowExt};
 use tokio::sync::oneshot;
 use tracing::{debug, error, info};
 
@@ -12,64 +11,10 @@ use crate::discord::spawn_reconnect_task;
 use crate::models::PendingRequests;
 
 pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
-    // ── Auto-reconnect background task ─────────────────────────────────────
     spawn_reconnect_task(app.handle().clone());
 
-    // ── Create main window ──────────────────────────────────────────────────
-    let window_config = app
-        .config()
-        .app
-        .windows
-        .iter()
-        .find(|c| c.label == "main")
-        .expect("main window config not found");
-    let window = tauri::WebviewWindowBuilder::from_config(app, window_config)?
-        .on_new_window({
-            let app_handle = app.handle().clone();
-            move |url, features| {
-                debug!(url = %url, "new window requested");
+    let window = crate::window::create_main_window(app)?;
 
-                let new_window = tauri::WebviewWindowBuilder::new(
-                    &app_handle,
-                    format!("popup-{}", url.path()),
-                    tauri::WebviewUrl::External(url.clone()),
-                )
-                .window_features(features)
-                .title(url.as_str())
-                .on_document_title_changed(|window, title| {
-                    let _ = window.set_title(&title);
-                })
-                .build()
-                .unwrap();
-
-                tauri::webview::NewWindowResponse::Create { window: new_window }
-            }
-        })
-        .on_page_load(|webview, payload| {
-            if payload.event() == PageLoadEvent::Finished {
-                webview
-                    .eval(include_str!("../../packages/inject/dist/index.js"))
-                    .unwrap();
-            }
-        })
-        .build()?;
-
-    window.on_window_event({
-        let app_handle = app.handle().clone();
-        move |event| match event {
-            tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) => {
-                app_handle.save_window_state(StateFlags::all()).unwrap();
-            }
-            _ => {}
-        }
-    });
-
-    #[cfg(debug_assertions)]
-    {
-        window.open_devtools();
-    }
-
-    // ── System tray ─────────────────────────────────────────────────────────
     let menu = Menu::with_items(
         app,
         &[

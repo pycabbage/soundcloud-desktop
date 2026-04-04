@@ -5,7 +5,9 @@ use crate::discord::{
     handle_playback_changed, handle_seeked, handle_track_changed, CurrentSoundState, DiscordState,
     PauseTimeoutHandle,
 };
-use crate::models::{PendingRequests, SoundAttributes};
+use tauri_plugin_store::StoreExt;
+
+use crate::models::{PendingRequests, PlaybackPrefs, SoundAttributes};
 
 /// Resolve a pending debug request by sending the track title to the waiting oneshot.
 async fn resolve_pending_request(
@@ -71,6 +73,40 @@ pub async fn event_seeked(
     handle_seeked(&discord, &current_sound, position_ms);
 
     Ok(())
+}
+
+#[tauri::command]
+pub async fn post_init(app: tauri::AppHandle) -> Result<PlaybackPrefs, String> {
+    let store = app.store("state.json").map_err(|e| e.to_string())?;
+    let shuffle = store
+        .get("shuffle")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let repeat_mode = store
+        .get("repeat_mode")
+        .and_then(|v| v.as_str().map(String::from))
+        .unwrap_or_else(|| "none".to_string());
+    info!(shuffle, repeat_mode, "event: post_init");
+    Ok(PlaybackPrefs {
+        shuffle,
+        repeat_mode,
+    })
+}
+
+#[tauri::command]
+pub async fn save_shuffle_state(app: tauri::AppHandle, shuffle: bool) -> Result<(), String> {
+    info!(shuffle, "event: save_shuffle_state");
+    let store = app.store("state.json").map_err(|e| e.to_string())?;
+    store.set("shuffle", shuffle);
+    store.save().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_repeat_mode(app: tauri::AppHandle, mode: String) -> Result<(), String> {
+    info!(mode, "event: save_repeat_mode");
+    let store = app.store("state.json").map_err(|e| e.to_string())?;
+    store.set("repeat_mode", mode);
+    store.save().map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

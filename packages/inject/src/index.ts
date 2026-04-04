@@ -2,15 +2,17 @@ import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
 import { createStore } from "zustand/vanilla"
 import { getPlayManager } from "./lib/playManager"
-// import { getV2BridgePlayer } from "./lib/v2BridgePlayer"
-// import type { PlayManager } from "./types/playManager"
 import type { Sound } from "./types/sound"
 import type { SoundEventObject } from "./types/soundEventObject"
+// import { getV2BridgePlayer } from "./lib/v2BridgePlayer"
+// import type { PlayManager } from "./types/playManager"
+import type { RepeatMode } from "./types/utils"
 
 // import type { V2BridgePlayer } from "./types/v2BridgePlayer"
 
 // const v2BridgePlayer = getV2BridgePlayer()
 const playManager = getPlayManager()
+let prefsInitialized = false
 
 // declare global {
 //   // var v2BridgePlayer: V2BridgePlayer
@@ -90,6 +92,23 @@ playManager.on("state:globalPlayLock", (val) =>
 playManager.on("state:fallbackEnabled", (val) =>
   console.log("[event] state:fallbackEnabled", val)
 )
+playManager.on("state:shuffle", (value: boolean) => {
+  if (!prefsInitialized) {
+    console.debug("[sc-desktop] Ignoring shuffle event during init:", value)
+    return
+  }
+  console.debug("[sc-desktop] Saving shuffle state:", value)
+  invoke("save_shuffle_state", { shuffle: value }).catch(console.error)
+})
+
+playManager.on("change:repeatMode", (mode: RepeatMode) => {
+  if (!prefsInitialized) {
+    console.debug("[sc-desktop] Ignoring repeatMode event during init:", mode)
+    return
+  }
+  console.debug("[sc-desktop] Saving repeat mode:", mode)
+  invoke("save_repeat_mode", { mode }).catch(console.error)
+})
 
 async function init() {
   if (playManager.hasCurrentSound()) {
@@ -100,6 +119,34 @@ async function init() {
       attributes: currentSound.attributes,
     })
   }
+
+  const prefs = await invoke<{ shuffle: boolean; repeat_mode: RepeatMode }>(
+    "post_init"
+  )
+  const currentShuffle = playManager.getState("shuffle")
+  const currentRepeatMode = playManager.getQueueState().repeatMode
+
+  if (currentShuffle !== prefs.shuffle) {
+    console.debug(
+      "[sc-desktop] Restoring shuffle:",
+      currentShuffle,
+      "→",
+      prefs.shuffle
+    )
+    playManager.toggleShuffle()
+  }
+  if (currentRepeatMode !== prefs.repeat_mode) {
+    console.debug(
+      "[sc-desktop] Restoring repeat mode:",
+      currentRepeatMode,
+      "→",
+      prefs.repeat_mode
+    )
+    playManager.setRepeatMode(prefs.repeat_mode)
+  }
+
+  prefsInitialized = true
+  console.debug("[sc-desktop] Init complete, event listeners now active")
 }
 
 init().catch(console.error)

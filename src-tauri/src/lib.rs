@@ -2,6 +2,7 @@ mod commands;
 mod discord;
 mod models;
 mod tray;
+mod window;
 
 use std::collections::HashMap;
 
@@ -10,7 +11,10 @@ use tauri::Manager;
 use tokio::sync::Mutex;
 use tracing::{info, warn};
 
-use commands::{event_change_current_sound, event_playback_state_changed, event_seeked};
+use commands::{
+    event_change_current_sound, event_playback_state_changed, event_seeked, post_init,
+    save_repeat_mode, save_shuffle_state,
+};
 use discord::{CurrentSoundState, DiscordState, PauseTimeoutHandle, DISCORD_APP_ID};
 use models::PendingRequests;
 
@@ -31,6 +35,7 @@ pub fn run() {
     };
 
     let mut builder = tauri::Builder::default()
+        .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
         .manage(PendingRequests(Mutex::new(HashMap::new())))
@@ -47,6 +52,9 @@ pub fn run() {
             event_change_current_sound,
             event_playback_state_changed,
             event_seeked,
+            post_init,
+            save_shuffle_state,
+            save_repeat_mode,
         ]);
     #[cfg(desktop)]
     {
