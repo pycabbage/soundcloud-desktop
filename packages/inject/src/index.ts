@@ -4,35 +4,11 @@ import { createStore } from "zustand/vanilla"
 import { getPlayManager } from "./lib/playManager"
 import type { Sound } from "./types/sound"
 import type { SoundEventObject } from "./types/soundEventObject"
-// import { getV2BridgePlayer } from "./lib/v2BridgePlayer"
-// import type { PlayManager } from "./types/playManager"
 import type { RepeatMode } from "./types/utils"
 
-// import type { V2BridgePlayer } from "./types/v2BridgePlayer"
-
-// const v2BridgePlayer = getV2BridgePlayer()
 const playManager = getPlayManager()
 let prefsInitialized = false
 
-// declare global {
-//   // var v2BridgePlayer: V2BridgePlayer
-//   var playManager: PlayManager
-// }
-
-// if (!("v2BridgePlayer" in globalThis))
-//   globalThis.v2BridgePlayer = v2BridgePlayer
-// if (!("playManager" in globalThis)) globalThis.playManager = playManager
-
-interface IRequest {
-  requestId: number
-}
-listen<IRequest>("get-song-title", async (event) => {
-  console.log("event", event)
-  await invoke("event_change_current_sound", {
-    requestId: event.payload.requestId,
-    attributes: playManager.getCurrentSound()?.attributes ?? {},
-  })
-}).catch(console.error)
 console.log("inject script loaded")
 
 async function handlePlay(e: SoundEventObject) {
@@ -92,22 +68,35 @@ playManager.on("state:globalPlayLock", (val) =>
 playManager.on("state:fallbackEnabled", (val) =>
   console.log("[event] state:fallbackEnabled", val)
 )
-playManager.on("state:shuffle", (value: boolean) => {
+playManager.on("state:shuffle", async (value: boolean) => {
   if (!prefsInitialized) {
     console.debug("[sc-desktop] Ignoring shuffle event during init:", value)
     return
   }
   console.debug("[sc-desktop] Saving shuffle state:", value)
-  invoke("save_shuffle_state", { shuffle: value }).catch(console.error)
+  await invoke("save_shuffle_state", { shuffle: value })
 })
 
-playManager.on("change:repeatMode", (mode: RepeatMode) => {
+playManager.on("change:repeatMode", async (mode: RepeatMode) => {
   if (!prefsInitialized) {
     console.debug("[sc-desktop] Ignoring repeatMode event during init:", mode)
     return
   }
   console.debug("[sc-desktop] Saving repeat mode:", mode)
-  invoke("save_repeat_mode", { mode }).catch(console.error)
+  await invoke("save_repeat_mode", { mode })
+})
+
+listen("play-pause", () => {
+  console.debug("[sc-desktop] Received play-pause event from main process")
+  playManager.toggleCurrent()
+})
+listen("next", () => {
+  console.debug("[sc-desktop] Received next event from main process")
+  playManager.playNext()
+})
+listen("previous", () => {
+  console.debug("[sc-desktop] Received previous event from main process")
+  playManager.playPrev()
 })
 
 async function init() {

@@ -1,14 +1,12 @@
 use tauri::{
-    menu::{Menu, MenuItem},
+    menu::{Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconEvent},
     Emitter, Manager,
 };
 use tauri_plugin_window_state::{StateFlags, WindowExt};
-use tokio::sync::oneshot;
-use tracing::{debug, error, info};
+use tracing::{debug, info};
 
 use crate::discord::spawn_reconnect_task;
-use crate::models::PendingRequests;
 
 pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     spawn_reconnect_task(app.handle().clone());
@@ -19,14 +17,14 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
         app,
         &[
             &MenuItem::with_id(app, "title", "SoundCloud Desktop", false, None::<&str>)?,
+            &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(app, "play_pause", "Play/Pause", true, None::<&str>)?,
+            &MenuItem::with_id(app, "next", "Next", true, None::<&str>)?,
+            &MenuItem::with_id(app, "previous", "Previous", true, None::<&str>)?,
+            &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(app, "show_window", "Show Window", true, None::<&str>)?,
+            &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?,
-            &MenuItem::with_id(
-                app,
-                "dbg_get_song_title",
-                "[Debug] Get Song Title",
-                true,
-                None::<&str>,
-            )?,
         ],
     )?;
     let tray = app.tray_by_id("main").unwrap();
@@ -42,33 +40,31 @@ pub fn on_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
         "quit" => {
             app.exit(0);
         }
-        "dbg_get_song_title" => {
-            info!("requesting song title from js");
-            let app = app.clone();
-            tauri::async_runtime::spawn(async move {
-                debug!("generating request id and waiting for response");
-
-                let request_id: u32 = rand::random();
-                let (tx, rx) = oneshot::channel::<String>();
-
-                {
-                    let pending = app.state::<PendingRequests>();
-                    pending.0.lock().await.insert(request_id, tx);
-                }
-
-                if let Err(e) = app.emit(
-                    "get-song-title",
-                    serde_json::json!({ "requestId": request_id }),
-                ) {
-                    error!(error = %e, "emit error");
-                    return;
-                }
-
-                match rx.await {
-                    Ok(result) => info!(title = %result, "got song title"),
-                    Err(e) => error!(error = %e, "oneshot recv error"),
-                }
-            });
+        "play_pause" => {
+            debug!("Play/Pause menu item clicked");
+            if let Err(e) = app.emit("play-pause", ()) {
+                info!(error = %e, "failed to emit play-pause");
+            }
+        }
+        "next" => {
+            debug!("Next menu item clicked");
+            if let Err(e) = app.emit("next", ()) {
+                info!(error = %e, "failed to emit next");
+            }
+        }
+        "previous" => {
+            debug!("Previous menu item clicked");
+            if let Err(e) = app.emit("previous", ()) {
+                info!(error = %e, "failed to emit previous");
+            }
+        }
+        "show_window" => {
+            debug!("Show Window menu item clicked");
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.unminimize();
+                let _ = window.show();
+                let _ = window.set_focus();
+            }
         }
         _ => {}
     }

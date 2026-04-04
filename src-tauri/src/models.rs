@@ -1,11 +1,6 @@
 #![allow(dead_code)]
 
-use std::collections::HashMap;
-
 use serde::Deserialize;
-use tokio::sync::{oneshot, Mutex};
-
-pub struct PendingRequests(pub Mutex<HashMap<u32, oneshot::Sender<String>>>);
 
 /// Snapshot of the currently playing track and its playback state.
 #[derive(Clone)]

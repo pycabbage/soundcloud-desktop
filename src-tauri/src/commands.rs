@@ -7,33 +7,18 @@ use crate::discord::{
 };
 use tauri_plugin_store::StoreExt;
 
-use crate::models::{PendingRequests, PlaybackPrefs, SoundAttributes};
-
-/// Resolve a pending debug request by sending the track title to the waiting oneshot.
-async fn resolve_pending_request(
-    pending: &PendingRequests,
-    request_id: Option<u32>,
-    attributes: &SoundAttributes,
-) {
-    let mut map = pending.0.lock().await;
-    let title = attributes.title.clone().unwrap_or_default();
-    let track_id = attributes.id;
-    info!(title, track_id, request_id, "event: change_current_sound");
-    if let Some(tx) = map.remove(&request_id.unwrap_or(0)) {
-        let _ = tx.send(title);
-    }
-}
+use crate::models::{PlaybackPrefs, SoundAttributes};
 
 #[tauri::command]
 pub async fn event_change_current_sound(
-    request_id: Option<u32>,
     attributes: SoundAttributes,
-    pending: State<'_, PendingRequests>,
     discord: State<'_, DiscordState>,
     current_sound: State<'_, CurrentSoundState>,
     pause_timeout: State<'_, PauseTimeoutHandle>,
 ) -> Result<(), String> {
-    resolve_pending_request(&pending, request_id, &attributes).await;
+    let title = attributes.title.clone().unwrap_or_default();
+    let track_id = attributes.id;
+    info!(title, track_id, "event: change_current_sound");
     handle_track_changed(&discord, &current_sound, &pause_timeout, attributes);
     Ok(())
 }
@@ -108,7 +93,3 @@ pub async fn save_repeat_mode(app: tauri::AppHandle, mode: String) -> Result<(),
     store.set("repeat_mode", mode);
     store.save().map_err(|e| e.to_string())
 }
-
-#[cfg(test)]
-#[path = "commands_tests.rs"]
-mod tests;

@@ -4,11 +4,8 @@ mod models;
 mod tray;
 mod window;
 
-use std::collections::HashMap;
-
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 use tauri::Manager;
-use tokio::sync::Mutex;
 use tracing::{info, warn};
 
 use commands::{
@@ -16,7 +13,6 @@ use commands::{
     save_repeat_mode, save_shuffle_state,
 };
 use discord::{CurrentSoundState, DiscordState, PauseTimeoutHandle, DISCORD_APP_ID};
-use models::PendingRequests;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -38,7 +34,6 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
-        .manage(PendingRequests(Mutex::new(HashMap::new())))
         .manage(discord_state)
         .manage(CurrentSoundState(std::sync::Mutex::new(None)))
         .manage(PauseTimeoutHandle(std::sync::Mutex::new(None)))
