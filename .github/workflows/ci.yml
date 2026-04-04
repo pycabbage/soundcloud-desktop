@@ -25,6 +25,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
+      - uses: oven-sh/setup-bun@v2
+      - run: bun install --frozen-lockfile
       - name: Install Tauri CLI
         run: |
           sudo apt update
@@ -41,7 +43,9 @@ jobs:
           sh <(curl https://create.tauri.app/sh) -- -y
       - name: Run tests
         working-directory: src-tauri
-        run: cargo test --all-features
+        run: |
+          bun run --filter @soundcloud-desktop/inject build
+          cargo test --all-features
       - name: Run clippy
         working-directory: src-tauri
         run: cargo clippy --all-targets --all-features
