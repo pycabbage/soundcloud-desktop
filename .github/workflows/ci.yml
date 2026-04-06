@@ -2,6 +2,10 @@ name: CI
 
 on:
   push:
+    branches:
+      - main
+    tags:
+      - 'v*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -62,3 +66,36 @@ jobs:
         run: bun run --filter @soundcloud-desktop/inject lint
       - name: Run build
         run: bun run --filter @soundcloud-desktop/inject build
+  release:
+    name: Release
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            args: ''
+    runs-on: ${{ matrix.platform }}
+    needs: [check_rust, check_ts]
+    if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: oven-sh/setup-bun@v2
+      - name: Prepare JS bundle
+        run: |
+          bun install --frozen-lockfile
+          bun run --filter @soundcloud-desktop/inject build
+      - uses: tauri-apps/tauri-action@action-v0.6.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: app-v__VERSION__
+          releaseName: 'App v__VERSION__'
+          releaseBody: 'See the assets to download this version and install.'
+          prerelease: ${{ contains(github.ref, '-beta') }}
+          updaterJsonPreferNsis: true
+          args: ${{ matrix.args }}

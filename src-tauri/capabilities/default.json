@@ -21,6 +21,7 @@
     "core:webview:allow-webview-close",
     "opener:default",
     "window-state:default",
-    "store:default"
+    "store:default",
+    "updater:default"
   ]
 }
