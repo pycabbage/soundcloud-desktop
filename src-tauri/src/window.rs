@@ -1,7 +1,16 @@
-use tauri::{webview::PageLoadEvent};
+use tauri::webview::PageLoadEvent;
 use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 use tracing::{debug, error};
+
+fn is_allowed_url(url: &str) -> bool {
+    (url.starts_with("https://soundcloud.com")
+        && !url.starts_with("https://soundcloud.com/company")
+        && !url.starts_with("https://soundcloud.com/getstarted"))
+        || url.starts_with("https://appleid.apple.com/auth/authorize")
+        || url.starts_with("https://accounts.google.com/o/oauth2/v2/auth")
+        || url.starts_with("https://www.facebook.com/dialog/oauth")
+}
 
 pub fn create_main_window(
     app: &mut tauri::App,
@@ -19,7 +28,7 @@ pub fn create_main_window(
             move |url, features| {
                 debug!(url = %url, "new window requested");
 
-                if !url.as_str().starts_with("https://soundcloud.com") {
+                if !is_allowed_url(url.as_str()) {
                     debug!("opening external url in default browser: {}", url);
                     app_handle
                         .opener()

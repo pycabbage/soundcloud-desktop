@@ -17,6 +17,27 @@ pub struct PlaybackPrefs {
     pub repeat_mode: String,
 }
 
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+pub struct AppSettings {
+    #[serde(default = "default_true")]
+    pub discord_enabled: bool,
+    #[serde(default)]
+    pub start_minimized: bool,
+}
+
+fn default_true() -> bool {
+    true
+}
+
+impl Default for AppSettings {
+    fn default() -> Self {
+        Self {
+            discord_enabled: true,
+            start_minimized: false,
+        }
+    }
+}
+
 // ─── SoundCloud model types ───────────────────────────────────────────────────
 
 #[derive(Clone, Deserialize)]

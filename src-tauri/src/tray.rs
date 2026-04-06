@@ -8,7 +8,10 @@ use tracing::{debug, info};
 
 use crate::discord::spawn_reconnect_task;
 
-pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
+pub fn setup(
+    app: &mut tauri::App,
+    start_minimized: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
     spawn_reconnect_task(app.handle().clone());
 
     let window = crate::window::create_main_window(app)?;
@@ -31,6 +34,11 @@ pub fn setup(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
     tray.set_menu(Some(menu))?;
 
     window.restore_state(StateFlags::all()).unwrap();
+
+    if start_minimized {
+        window.hide().unwrap();
+        info!("window hidden (start_minimized = true)");
+    }
 
     Ok(())
 }

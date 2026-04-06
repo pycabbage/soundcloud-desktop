@@ -1,3 +1,4 @@
+use std::sync::atomic::Ordering;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use discord_rich_presence::{activity, DiscordIpc, DiscordIpcClient};
@@ -5,6 +6,7 @@ use tauri::Manager;
 use tracing::{error, info, warn};
 
 use crate::models::{PlaybackState, SoundAttributes};
+use crate::DiscordEnabled;
 
 // ─── Types (app state wrappers) ──────────────────────────────────────────────
 
@@ -336,6 +338,14 @@ pub fn spawn_reconnect_task(app_handle: tauri::AppHandle) {
     tauri::async_runtime::spawn(async move {
         loop {
             tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+
+            let enabled = app_handle
+                .state::<DiscordEnabled>()
+                .0
+                .load(Ordering::Relaxed);
+            if !enabled {
+                continue;
+            }
 
             let discord = app_handle.state::<DiscordState>();
             let needs_reconnect = discord.0.lock().map(|g| g.is_none()).unwrap_or(false);

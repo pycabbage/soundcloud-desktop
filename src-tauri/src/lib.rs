@@ -4,8 +4,12 @@ mod models;
 mod tray;
 mod window;
 
+use std::sync::atomic::AtomicBool;
+use std::sync::Arc;
+
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 use tauri::Manager;
+use tauri_plugin_store::StoreExt;
 use tracing::{info, warn};
 
 use commands::{
@@ -13,32 +17,71 @@ use commands::{
     save_repeat_mode, save_shuffle_state,
 };
 use discord::{CurrentSoundState, DiscordState, PauseTimeoutHandle, DISCORD_APP_ID};
+use models::AppSettings;
+
+pub struct DiscordEnabled(pub Arc<AtomicBool>);
+
+fn read_settings(app: &tauri::AppHandle) -> AppSettings {
+    match app.store("settings.json") {
+        Ok(store) => {
+            let settings = AppSettings {
+                discord_enabled: store
+                    .get("discord_enabled")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(true),
+                start_minimized: store
+                    .get("start_minimized")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false),
+            };
+            info!(?settings, "loaded settings from settings.json");
+            settings
+        }
+        Err(e) => {
+            warn!(error = %e, "failed to open settings.json, using defaults");
+            AppSettings::default()
+        }
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let discord_state = {
-        let mut client = DiscordIpcClient::new(DISCORD_APP_ID);
-        match client.connect() {
-            Ok(()) => {
-                info!("discord rich presence connected");
-                DiscordState(std::sync::Mutex::new(Some(client)))
-            }
-            Err(e) => {
-                warn!(error = %e, "failed to connect to discord (will retry)");
-                DiscordState(std::sync::Mutex::new(None))
-            }
-        }
-    };
-
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
-        .manage(discord_state)
-        .manage(CurrentSoundState(std::sync::Mutex::new(None)))
-        .manage(PauseTimeoutHandle(std::sync::Mutex::new(None)))
         .plugin(tauri_plugin_opener::init())
-        .setup(tray::setup)
+        .setup(|app| {
+            let settings = read_settings(app.handle());
+
+            let discord_enabled = Arc::new(AtomicBool::new(settings.discord_enabled));
+            app.manage(DiscordEnabled(discord_enabled.clone()));
+
+            let discord_state = if settings.discord_enabled {
+                let mut client = DiscordIpcClient::new(DISCORD_APP_ID);
+                match client.connect() {
+                    Ok(()) => {
+                        info!("discord rich presence connected");
+                        DiscordState(std::sync::Mutex::new(Some(client)))
+                    }
+                    Err(e) => {
+                        warn!(error = %e, "failed to connect to discord (will retry)");
+                        DiscordState(std::sync::Mutex::new(None))
+                    }
+                }
+            } else {
+                info!("discord rich presence disabled by settings");
+                DiscordState(std::sync::Mutex::new(None))
+            };
+
+            app.manage(discord_state);
+            app.manage(CurrentSoundState(std::sync::Mutex::new(None)));
+            app.manage(PauseTimeoutHandle(std::sync::Mutex::new(None)));
+
+            tray::setup(app, settings.start_minimized)?;
+
+            Ok(())
+        })
         .on_menu_event(tray::on_menu_event)
         .on_tray_icon_event(tray::on_tray_icon_event)
         .on_window_event(tray::on_window_event)
