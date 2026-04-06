@@ -40,8 +40,13 @@
     "createUpdaterArtifacts": true,
     "homepage": "https://github.com/pycabbage/soundcloud-desktop",
     "windows": {
+      "allowDowngrades": true,
       "nsis": {
-        "installMode": "currentUser"
+        "installMode": "currentUser",
+        "languages": ["English", "Japanese"],
+        "headerImage": "assets/soundcloud_150x57.bmp",
+        "sidebarImage": "assets/soundcloud_164x314.bmp",
+        "installerIcon": "icons/icon.ico"
       }
     },
     "icon": [
