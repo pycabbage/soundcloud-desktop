@@ -10,6 +10,7 @@ fn is_allowed_url(url: &str) -> bool {
         || url.starts_with("https://appleid.apple.com/auth/authorize")
         || url.starts_with("https://accounts.google.com/o/oauth2/v2/auth")
         || url.starts_with("https://www.facebook.com/dialog/oauth")
+        || url.starts_with("about:")
 }
 
 pub fn create_main_window(

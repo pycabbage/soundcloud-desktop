@@ -36,9 +36,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": ["nsis", "deb", "appimage", "rpm"],
     "createUpdaterArtifacts": true,
     "homepage": "https://github.com/pycabbage/soundcloud-desktop",
+    "category": "Music",
     "windows": {
       "allowDowngrades": true,
       "nsis": {
@@ -55,7 +56,8 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "shortDescription": "A Soundcloud desktop client."
   },
   "plugins": {
     "updater": {

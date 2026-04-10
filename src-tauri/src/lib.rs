@@ -22,26 +22,53 @@ use models::AppSettings;
 pub struct DiscordEnabled(pub Arc<AtomicBool>);
 
 fn read_settings(app: &tauri::AppHandle) -> AppSettings {
-    match app.store("settings.json") {
-        Ok(store) => {
-            let settings = AppSettings {
-                discord_enabled: store
-                    .get("discord_enabled")
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or(true),
-                start_minimized: store
-                    .get("start_minimized")
-                    .and_then(|v| v.as_bool())
-                    .unwrap_or(false),
-            };
-            info!(?settings, "loaded settings from settings.json");
-            settings
-        }
+    let defaults = AppSettings::default();
+
+    let store = match app.store("settings.json") {
+        Ok(store) => store,
         Err(e) => {
             warn!(error = %e, "failed to open settings.json, using defaults");
-            AppSettings::default()
+            return defaults;
+        }
+    };
+
+    // Persist default values for any keys missing from settings.json
+    let mut needs_save = false;
+    if !store.has("discord_enabled") {
+        store.set("discord_enabled", defaults.discord_enabled);
+        needs_save = true;
+    }
+    if !store.has("start_minimized") {
+        store.set("start_minimized", defaults.start_minimized);
+        needs_save = true;
+    }
+    if !store.has("autostart") {
+        store.set("autostart", defaults.autostart);
+        needs_save = true;
+    }
+    if needs_save {
+        match store.save() {
+            Ok(()) => info!("wrote missing default settings to settings.json"),
+            Err(e) => warn!(error = %e, "failed to save default settings to settings.json"),
         }
     }
+
+    let settings = AppSettings {
+        discord_enabled: store
+            .get("discord_enabled")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(defaults.discord_enabled),
+        start_minimized: store
+            .get("start_minimized")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(defaults.start_minimized),
+        autostart: store
+            .get("autostart")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(defaults.autostart),
+    };
+    info!(?settings, "loaded settings from settings.json");
+    settings
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -52,6 +79,10 @@ pub fn run() {
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_autostart::init(
+            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
+            None,
+        ))
         .setup(|app| {
             let settings = read_settings(app.handle());
 
@@ -80,6 +111,25 @@ pub fn run() {
             app.manage(PauseTimeoutHandle(std::sync::Mutex::new(None)));
 
             tray::setup(app, settings.start_minimized)?;
+
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_autostart::ManagerExt;
+                let autostart_manager = app.autolaunch();
+                if settings.autostart {
+                    if let Err(e) = autostart_manager.enable() {
+                        warn!(error = %e, "failed to enable autostart");
+                    } else {
+                        info!("autostart enabled");
+                    }
+                } else {
+                    if let Err(e) = autostart_manager.disable() {
+                        warn!(error = %e, "failed to disable autostart");
+                    } else {
+                        info!("autostart disabled");
+                    }
+                }
+            }
 
             Ok(())
         })

@@ -113,7 +113,7 @@ async function init() {
     "post_init"
   )
   const currentShuffle = playManager.getState("shuffle")
-  const currentRepeatMode = playManager.getQueueState().repeatMode
+  const { repeatMode: currentRepeatMode } = playManager.getQueueState()
 
   if (currentShuffle !== prefs.shuffle) {
     console.debug(

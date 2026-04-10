@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 /// Snapshot of the currently playing track and its playback state.
 #[derive(Clone)]
@@ -11,18 +11,20 @@ pub struct PlaybackState {
     pub position_ms: f64,
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, Serialize)]
 pub struct PlaybackPrefs {
     pub shuffle: bool,
     pub repeat_mode: String,
 }
 
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct AppSettings {
     #[serde(default = "default_true")]
     pub discord_enabled: bool,
     #[serde(default)]
     pub start_minimized: bool,
+    #[serde(default)]
+    pub autostart: bool,
 }
 
 fn default_true() -> bool {
@@ -34,6 +36,7 @@ impl Default for AppSettings {
         Self {
             discord_enabled: true,
             start_minimized: false,
+            autostart: false,
         }
     }
 }

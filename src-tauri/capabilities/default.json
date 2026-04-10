@@ -22,6 +22,7 @@
     "opener:default",
     "window-state:default",
     "store:default",
-    "updater:default"
+    "updater:default",
+    "autostart:default"
   ]
 }
