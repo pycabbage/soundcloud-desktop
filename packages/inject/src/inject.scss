@@ -1,0 +1,55 @@
+body.theme-dark {
+  --background-surface-color-original: #121212;
+  --background-surface-color: rgba(0, 0, 0, 0.7);
+  --highlight-color-original: #303030;
+  --highlight-color: rgba(48, 48, 48, 0.7);
+  --surface-color-original: #121212;
+  --surface-color: rgba(0, 0, 0, 0.7);
+}
+body.theme-light {
+  --background-surface-color-original: #ffffff;
+  --background-surface-color: rgba(255, 255, 255, 0.7);
+  --highlight-color-original: #f3f3f3;
+  --highlight-color: rgba(243, 243, 243, 0.7);
+  --surface-color-original: #ffffff;
+  --surface-color: rgba(255, 255, 255, 0.7);
+}
+
+header.header,
+div.dropdownMenu,
+.modal__modal {
+  background-color: var(--background-surface-color-original);
+}
+.playControls__bg, .playControls__inner {
+  background-color: var(--highlight-color-original);
+}
+.dialog, .dialog__arrow,
+.linkMenu,
+.queue {
+  background: var(--surface-color-original);
+}
+.sc-button.sc-button-tertiary, .sc-button.sc-button-tertiary:visited {
+  background: transparent;
+}
+
+/* Hide Upgrade Banner, Upgrade Button */
+div.l-product-banners, /* Upgrade banner */
+div.header__upsellWrapper /* Upgrade button */ {
+  display: none;
+}
+
+/* Hide Artist tools */
+div.streamSidebar > div:not([class]), /* Artist tools banner */
+a.header__forArtistsButton /* Artist tools button */ {
+  display: none;
+}
+
+/* Hide "Go mobile" banner */
+article.sidebarModule.mobileApps {
+  display: none;
+}
+
+/* Hide "Fans" sidebar */
+div.webiEmbeddedModule {
+  display: none;
+}

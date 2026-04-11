@@ -1,4 +1,4 @@
-use tauri::webview::PageLoadEvent;
+use tauri::{webview::PageLoadEvent, window::{Color, Effect, EffectsBuilder}};
 use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 use tracing::{debug, error};
@@ -64,6 +64,13 @@ pub fn create_main_window(
             }
         })
         .build()?;
+
+    window.set_effects(
+        EffectsBuilder::new()
+            .effect(Effect::Acrylic)
+            .color(Color(18, 18, 18, 200))
+            .build(),
+    )?;
 
     window.on_window_event({
         let app_handle = app.handle().clone();

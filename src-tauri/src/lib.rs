@@ -122,12 +122,10 @@ pub fn run() {
                     } else {
                         info!("autostart enabled");
                     }
+                } else if let Err(e) = autostart_manager.disable() {
+                    warn!(error = %e, "failed to disable autostart");
                 } else {
-                    if let Err(e) = autostart_manager.disable() {
-                        warn!(error = %e, "failed to disable autostart");
-                    } else {
-                        info!("autostart disabled");
-                    }
+                    info!("autostart disabled");
                 }
             }
 
@@ -156,6 +154,7 @@ pub fn run() {
             }
         }));
     }
+    
     builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
