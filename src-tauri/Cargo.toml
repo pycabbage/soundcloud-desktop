@@ -1,6 +1,6 @@
 [package]
 name = "soundcloud-desktop"
-version = "0.1.1-beta.2"
+version = "0.1.1-beta.3"
 description = "A SoundCloud desktop client built with Tauri."
 authors = ["you"]
 edition = "2021"

@@ -1,3 +1,7 @@
+:root {
+  --titlebar-height: 32px;
+}
+
 body.theme-dark {
   --background-surface-color-original: #121212;
   --background-surface-color: rgba(0, 0, 0, 0.7);
@@ -52,4 +56,11 @@ article.sidebarModule.mobileApps {
 /* Hide "Fans" sidebar */
 div.webiEmbeddedModule {
   display: none;
+}
+
+header.header {
+  top: var(--titlebar-height);
+}
+.l-container.l-content {
+  padding-top: calc(var(--titlebar-height) + 46px);
 }

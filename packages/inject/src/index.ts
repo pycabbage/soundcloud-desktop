@@ -3,6 +3,7 @@ import { listen } from "@tauri-apps/api/event"
 import { createStore } from "zustand/vanilla"
 import injectStyles from "./inject.scss"
 import { getPlayManager } from "./lib/playManager"
+import { insertTitlebar } from "./toolbar"
 import type { Sound } from "./types/sound"
 import type { SoundEventObject } from "./types/soundEventObject"
 import type { RepeatMode } from "./types/utils"
@@ -136,9 +137,11 @@ async function init() {
   }
 
   // Inject styles
-  const styleElement = document.createElement("style")
-  styleElement.textContent = injectStyles
-  document.head.appendChild(styleElement)
+  const sheet = new CSSStyleSheet()
+  sheet.replaceSync(injectStyles)
+  document.adoptedStyleSheets.push(sheet)
+
+  insertTitlebar()
 
   prefsInitialized = true
   console.debug("[sc-desktop] Init complete, event listeners now active")
