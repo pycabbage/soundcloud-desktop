@@ -1,7 +1,8 @@
 import { createContext } from "react"
 import { createRoot } from "react-dom/client"
+import { panic } from "../lib/utils"
 import { Titlebar } from "./Titlebar"
-import tailwind from "./tailwind.css"
+import toolbar from "./toolbar.css"
 
 export const ShadowRootContext = createContext<ShadowRoot | null>(null)
 
@@ -16,12 +17,17 @@ export function insertTitlebar() {
 
   document.body.appendChild(host)
 
+  const nativeHeader =
+    document.querySelector<HTMLElement>("header.header") ??
+    panic("Could not find native header element")
+  nativeHeader.dataset.tauriDragRegion = ""
+
   const shadowRoot = host.attachShadow({ mode: "open" })
   const container = document.createElement("div")
   shadowRoot.appendChild(container)
 
   const style = new CSSStyleSheet()
-  style.replaceSync(tailwind)
+  style.replaceSync(toolbar)
   shadowRoot.adoptedStyleSheets.push(style)
 
   const portalRoot = document.createElement("div")

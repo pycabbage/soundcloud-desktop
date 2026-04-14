@@ -102,6 +102,8 @@ listen("previous", () => {
 })
 
 async function init() {
+  insertTitlebar()
+
   if (playManager.hasCurrentSound()) {
     // biome-ignore lint/style/noNonNullAssertion: We check if there is a current sound, so it can't be null
     const currentSound = playManager.getCurrentSound()!
@@ -140,8 +142,6 @@ async function init() {
   const sheet = new CSSStyleSheet()
   sheet.replaceSync(injectStyles)
   document.adoptedStyleSheets.push(sheet)
-
-  insertTitlebar()
 
   prefsInitialized = true
   console.debug("[sc-desktop] Init complete, event listeners now active")

@@ -1,107 +1,4 @@
-import {
-  createContext,
-  type ReactNode,
-  useContext,
-  useId,
-  useRef,
-  useState,
-} from "react"
-import { createPortal } from "react-dom"
-import { usePortalRoot } from "./usePortalRoot"
-
-type Pos = { x: number; y: number }
-
-interface MenuBarCtx {
-  activeId: string | null
-  activate: (id: string) => void
-  deactivate: () => void
-}
-const MenuBarContext = createContext<MenuBarCtx>({
-  activeId: null,
-  activate: () => {},
-  deactivate: () => {},
-})
-
-interface MenuCtx {
-  portalRoot: Element
-  activeSubId: string | null
-  activateSub: (id: string) => void
-  deactivateSub: () => void
-  closeAll: () => void
-}
-const MenuContext = createContext<MenuCtx | null>(null)
-
-const useMenu = () => {
-  const ctx = useContext(MenuContext)
-  if (!ctx) throw new Error("useMenu must be inside MenuList")
-  return ctx
-}
-
-function MenuList({
-  pos,
-  portalRoot,
-  onClose,
-  children,
-  hasBackdrop = false,
-}: {
-  pos: Pos
-  portalRoot: Element
-  onClose: () => void
-  children: ReactNode
-  hasBackdrop?: boolean
-}) {
-  const [activeSubId, setActiveSubId] = useState<string | null>(null)
-
-  return (
-    <>
-      {/* top-levelのみbackdropを持つ。クリックで全閉じ */}
-      {hasBackdrop && (
-        <button
-          className="fixed inset-0 z-9998"
-          onClick={onClose}
-          type="button"
-        />
-      )}
-      <MenuContext.Provider
-        value={{
-          portalRoot,
-          activeSubId,
-          activateSub: setActiveSubId,
-          deactivateSub: () => setActiveSubId(null),
-          closeAll: onClose,
-        }}
-      >
-        <ul
-          className="fixed z-9999 min-w-36 rounded bg-zinc-800 py-1 shadow-xl ring-1 ring-white/10"
-          style={{ left: pos.x, top: pos.y }}
-        >
-          {children}
-        </ul>
-      </MenuContext.Provider>
-    </>
-  )
-}
-
-export function MenuBar({
-  children,
-  className,
-}: {
-  children: ReactNode
-  className?: string
-}) {
-  const [activeId, setActiveId] = useState<string | null>(null)
-  return (
-    <MenuBarContext.Provider
-      value={{
-        activeId,
-        activate: setActiveId,
-        deactivate: () => setActiveId(null),
-      }}
-    >
-      <nav className={className}>{children}</nav>
-    </MenuBarContext.Provider>
-  )
-}
+import { type ReactNode, useId, useRef } from "react"
 
 export function MenuButton({
   label,
@@ -111,111 +8,102 @@ export function MenuButton({
   children: ReactNode
 }) {
   const id = useId()
-  const { activeId, activate, deactivate } = useContext(MenuBarContext)
-  const isOpen = activeId === id
-  const ref = useRef<HTMLButtonElement>(null)
-  const portalRoot = usePortalRoot()
-  const [pos, setPos] = useState<Pos>({ x: 0, y: 0 })
+  const popoverRef = useRef<HTMLUListElement>(null)
 
-  const toggle = () => {
-    if (isOpen) {
-      deactivate()
-      return
-    }
-    const rect = ref.current?.getBoundingClientRect()
-    if (rect) setPos({ x: rect.left, y: rect.bottom })
-    activate(id)
-  }
+  const devToggleButtonRef = useRef<HTMLButtonElement>(null)
 
   return (
     <>
       <button
-        ref={ref}
-        onClick={toggle}
-        className="px-2 py-1 text-sm hover:bg-zinc-700 rounded"
+        ref={devToggleButtonRef}
+        onClick={() => {
+          console.log("[dev] toggle menu", id, devToggleButtonRef.current)
+        }}
         type="button"
+        popoverTarget={id}
+        popoverTargetAction="toggle"
+        aria-haspopup="menu"
+        aria-controls={id}
+        className="px-2 py-1 text-sm hover:bg-zinc-700 rounded outline-none"
+        style={{ anchorName: `--anchor-${id}` }}
       >
         {label}
       </button>
-      {isOpen &&
-        createPortal(
-          <MenuList
-            pos={pos}
-            portalRoot={portalRoot}
-            onClose={deactivate}
-            hasBackdrop
-          >
-            {children}
-          </MenuList>,
-          portalRoot
-        )}
+
+      <ul
+        ref={popoverRef}
+        id={id}
+        popover="auto"
+        aria-label={label}
+        className="menu-panel m-0 p-1 rounded bg-zinc-800 shadow-xl"
+        style={{ positionAnchor: `--anchor-${id}` }}
+      >
+        {children}
+      </ul>
     </>
   )
 }
 
-export function MenuItem({
-  label,
-  onClick,
-}: {
+interface SubMenuItemProps {
   label: string
-  onClick?: () => void
-}) {
-  const { deactivateSub, closeAll } = useMenu()
-  const handlePress = () => {
-    onClick?.()
-    closeAll()
+  children: ReactNode
+}
+export function SubMenuItem({ label, children }: SubMenuItemProps) {
+  const id = useId()
+  const popoverRef = useRef<HTMLUListElement>(null)
+
+  const handleMouseLeave = (e: React.MouseEvent<HTMLLIElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    popoverRef.current?.hidePopover()
   }
 
   return (
     <li
-      className="cursor-pointer px-4 py-1.5 text-sm text-zinc-200 hover:bg-zinc-700"
-      onMouseEnter={deactivateSub}
-      onClick={handlePress}
-      onKeyDown={({ key }) => {
-        if (key === "Enter") handlePress()
-      }}
+      role="none"
+      onMouseEnter={() => popoverRef.current?.showPopover()}
+      onMouseLeave={handleMouseLeave}
+      style={{ anchorName: `--anchor-${id}` }}
     >
-      {label}
+      <button
+        type="button"
+        popoverTarget={id}
+        role="menuitem"
+        aria-haspopup="menu"
+        aria-controls={id}
+        aria-expanded={false}
+        className="w-full flex justify-between px-4 py-1.5 text-sm hover:bg-zinc-700"
+      >
+        {label} <span aria-hidden>›</span>
+      </button>
+
+      <ul
+        ref={popoverRef}
+        id={id}
+        popover="auto"
+        className="submenu-panel m-0 p-1 rounded bg-zinc-800 shadow-xl"
+        style={{ positionAnchor: `--anchor-${id}` }}
+      >
+        {children}
+      </ul>
     </li>
   )
 }
 
-export function SubMenuItem({
-  label,
-  children,
-}: {
+interface MenuItemProps {
   label: string
-  children: ReactNode
-}) {
-  const id = useId()
-  const { activeSubId, activateSub, portalRoot, closeAll } = useMenu()
-  const isOpen = activeSubId === id
-  const ref = useRef<HTMLLIElement>(null)
-  const [pos, setPos] = useState<Pos>({ x: 0, y: 0 })
-
-  const handleMouseEnter = () => {
-    const rect = ref.current?.getBoundingClientRect()
-    if (rect) setPos({ x: rect.right, y: rect.top })
-    activateSub(id)
-  }
-
+  onClick?: () => void
+}
+export function MenuItem({ label, onClick }: MenuItemProps) {
   return (
-    <>
-      <li
-        ref={ref}
-        className="flex cursor-pointer items-center justify-between px-4 py-1.5 text-sm text-zinc-200 hover:bg-zinc-700"
-        onMouseEnter={handleMouseEnter}
+    <li role="none">
+      <button
+        type="button"
+        role="menuitem"
+        className="w-full px-4 py-1.5 text-sm text-left hover:bg-zinc-700"
+        onClick={onClick}
       >
         {label}
-        <span className="ml-4 text-zinc-400">›</span>
-      </li>
-      {isOpen &&
-        createPortal(
-          <MenuList pos={pos} portalRoot={portalRoot} onClose={closeAll}>
-            {children}
-          </MenuList>,
-          portalRoot
-        )}
-    </>
+      </button>
+    </li>
   )
 }

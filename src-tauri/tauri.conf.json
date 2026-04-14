@@ -29,6 +29,8 @@
         "height": 800,
         "decorations": false,
         "transparent": true,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
         "url": "https://soundcloud.com/discover"
       }
     ],

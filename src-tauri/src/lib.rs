@@ -129,6 +129,10 @@ pub fn run() {
                 }
             }
 
+            if let Some(window) = app.get_webview_window("main") {
+                window.set_decorations(false)?;
+            }
+
             Ok(())
         })
         .on_menu_event(tray::on_menu_event)
@@ -154,7 +158,13 @@ pub fn run() {
             }
         }));
     }
-    
+
+    #[cfg(debug_assertions)]
+    std::env::set_var(
+        "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+        "--remote-debugging-port=9222",
+    );
+
     builder
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

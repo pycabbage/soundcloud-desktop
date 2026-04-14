@@ -1,8 +1,22 @@
-import { MenuBar, MenuButton, MenuItem, SubMenuItem } from "./menu"
+import { invoke } from "@tauri-apps/api/core"
+import { MenuButton, MenuItem, SubMenuItem } from "./menu"
 
 export function Titlebar() {
   return (
-    <MenuBar className="flex items-center h-8 bg-zinc-900 text-white select-none touch-manipulation">
+    <nav
+      aria-label="Application Menu"
+      className="flex items-center h-8 min-w-screen w-screen select-none touch-manipulation"
+      onMouseDown={(e) => {
+        const interactiveElements = new Set(["BUTTON", "A"])
+        console.log(e.button)
+        if (
+          e.target instanceof HTMLElement &&
+          !interactiveElements.has(e.target.tagName)
+        ) {
+          invoke("plugin:window|start_dragging")
+        }
+      }}
+    >
       <h1 className="px-2 text-sm font-bold underline">SoundCloud Desktop</h1>
 
       <MenuButton label="Settings">
@@ -19,6 +33,6 @@ export function Titlebar() {
         </SubMenuItem>
         <MenuItem label="About" />
       </MenuButton>
-    </MenuBar>
+    </nav>
   )
 }

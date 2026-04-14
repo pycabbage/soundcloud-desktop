@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@layer components {
+  .menu-panel {
+    position: absolute;
+    inset: auto;
+    margin: 0;
+    min-width: 10rem;
+
+    /* open/close アニメーション */
+    transition:
+      display 150ms,
+      opacity 150ms;
+    transition-behavior: allow-discrete;
+    opacity: 0;
+
+    &:popover-open {
+      opacity: 1;
+      @starting-style {
+        opacity: 0;
+      }
+    }
+
+    /* アンカー（ボタン）の左端・下端に合わせる */
+    top: anchor(bottom);
+    left: anchor(left);
+  }
+
+  .submenu-panel {
+    position: absolute;
+    inset: auto;
+    margin: 0;
+    min-width: 10rem;
+
+    top: anchor(top);
+    left: anchor(right);
+  }
+}
