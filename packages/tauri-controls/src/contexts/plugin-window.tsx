@@ -1,5 +1,6 @@
 import type { Window } from "@tauri-apps/api/window"
-import React, { createContext, useCallback, useEffect, useState } from "react"
+import type React from "react"
+import { createContext, useCallback, useEffect, useState } from "react"
 import { getOsType } from "../libs/plugin-os"
 
 interface TauriAppWindowContextType {
@@ -66,7 +67,7 @@ export const TauriAppWindowProvider: React.FC<TauriAppWindowProviderProps> = ({
         listen()
 
         // Cleanup the listener when the component unmounts
-        return () => unlisten && unlisten()
+        return () => unlisten?.()
       }
     })
   }, [appWindow, updateIsWindowMaximized])

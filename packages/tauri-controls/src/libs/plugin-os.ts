@@ -1,6 +1,6 @@
 import type { OsType } from "@tauri-apps/plugin-os"
 
-let osType: OsType | undefined = undefined
+let osType: OsType | undefined
 let osTypePromise: Promise<OsType> | null = null
 
 if (typeof window !== "undefined") {
