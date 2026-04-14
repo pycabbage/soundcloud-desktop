@@ -15,6 +15,7 @@ export function insertTitlebar() {
   host.style.left = "0"
   host.style.zIndex = "9999"
   host.style.width = "100%"
+  host.style.height = "32px"
 
   document.body.appendChild(host)
 

@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@source "../../../tauri-controls/src/**";
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
@@ -64,4 +65,11 @@
   --color-surface-dark: #121212;
 
   --spacing-titlebar: 32px;
+  --color-background: #ffffff;
+}
+
+@layer base {
+  [data-theme="dark"] {
+    --color-background: #121212;
+  }
 }
