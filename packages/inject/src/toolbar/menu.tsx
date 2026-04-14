@@ -1,30 +1,33 @@
-import { type ReactNode, useId, useRef } from "react"
+import {
+  type MouseEventHandler,
+  type ReactNode,
+  useId,
+  useRef,
+  useTransition,
+} from "react"
+import { cn } from "../utils/cn"
 
-export function MenuButton({
-  label,
-  children,
-}: {
+interface MenuButtonProps {
   label: string
   children: ReactNode
-}) {
+}
+export function MenuButton({ label, children }: MenuButtonProps) {
   const id = useId()
   const popoverRef = useRef<HTMLUListElement>(null)
-
-  const devToggleButtonRef = useRef<HTMLButtonElement>(null)
 
   return (
     <>
       <button
-        ref={devToggleButtonRef}
-        onClick={() => {
-          console.log("[dev] toggle menu", id, devToggleButtonRef.current)
-        }}
         type="button"
         popoverTarget={id}
         popoverTargetAction="toggle"
         aria-haspopup="menu"
         aria-controls={id}
-        className="px-2 py-1 text-sm hover:bg-zinc-700 rounded outline-none"
+        className={cn(
+          "px-2 py-1 text-sm rounded outline-none region-no-drag",
+          "text-primary-light dark:text-primary-dark",
+          "hover:bg-highlight-light dark:hover:bg-highlight-dark"
+        )}
         style={{ anchorName: `--anchor-${id}` }}
       >
         {label}
@@ -35,7 +38,11 @@ export function MenuButton({
         id={id}
         popover="auto"
         aria-label={label}
-        className="menu-panel m-0 p-1 rounded bg-zinc-800 shadow-xl"
+        className={cn(
+          "menu-panel m-0 p-1 rounded shadow-xl",
+          "text-primary-light dark:text-primary-dark",
+          "bg-background-surface-light dark:bg-background-surface-dark"
+        )}
         style={{ positionAnchor: `--anchor-${id}` }}
       >
         {children}
@@ -52,7 +59,7 @@ export function SubMenuItem({ label, children }: SubMenuItemProps) {
   const id = useId()
   const popoverRef = useRef<HTMLUListElement>(null)
 
-  const handleMouseLeave = (e: React.MouseEvent<HTMLLIElement>) => {
+  const handleMouseLeave: MouseEventHandler<HTMLLIElement> = (e) => {
     if (e.currentTarget.contains(e.relatedTarget as Node)) return
     popoverRef.current?.hidePopover()
   }
@@ -71,7 +78,11 @@ export function SubMenuItem({ label, children }: SubMenuItemProps) {
         aria-haspopup="menu"
         aria-controls={id}
         aria-expanded={false}
-        className="w-full flex justify-between px-4 py-1.5 text-sm hover:bg-zinc-700"
+        className={cn(
+          "w-full flex justify-between px-4 py-1.5 text-sm",
+          "text-primary-light dark:text-primary-dark",
+          "hover:bg-highlight-light dark:hover:bg-highlight-dark"
+        )}
       >
         {label} <span aria-hidden>›</span>
       </button>
@@ -80,7 +91,11 @@ export function SubMenuItem({ label, children }: SubMenuItemProps) {
         ref={popoverRef}
         id={id}
         popover="auto"
-        className="submenu-panel m-0 p-1 rounded bg-zinc-800 shadow-xl"
+        className={cn(
+          "submenu-panel m-0 p-1 rounded shadow-xl",
+          "bg-background-surface-light dark:bg-background-surface-dark",
+          "text-primary-light dark:text-primary-dark"
+        )}
         style={{ positionAnchor: `--anchor-${id}` }}
       >
         {children}
@@ -89,18 +104,39 @@ export function SubMenuItem({ label, children }: SubMenuItemProps) {
   )
 }
 
+function closePopovers<E extends HTMLElement>(target: E) {
+  const closestPopover = target.closest<E>("[popover]")
+  closestPopover?.hidePopover()
+
+  if (closestPopover?.parentElement) {
+    closePopovers(closestPopover.parentElement)
+  }
+}
+
 interface MenuItemProps {
   label: string
-  onClick?: () => void
+  onClick?: () => void | Promise<void>
 }
 export function MenuItem({ label, onClick }: MenuItemProps) {
+  const [isBusy, startTransition] = useTransition()
+
   return (
     <li role="none">
       <button
         type="button"
         role="menuitem"
-        className="w-full px-4 py-1.5 text-sm text-left hover:bg-zinc-700"
-        onClick={onClick}
+        className={cn(
+          "w-full px-4 py-1.5 text-sm text-left",
+          "bg-background-surface-light dark:bg-background-surface-dark",
+          "hover:bg-highlight-light dark:hover:bg-highlight-dark"
+        )}
+        aria-busy={isBusy}
+        onClick={async (e) => {
+          startTransition(async () => {
+            await onClick?.()
+          })
+          closePopovers(e.currentTarget)
+        }}
       >
         {label}
       </button>

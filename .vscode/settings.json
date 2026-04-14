@@ -1,5 +1,8 @@
 {
   "json.schemaDownload.trustedDomains": {
     "https://schema.tauri.app/config/2": true
-  }
+  },
+  "css.customData": [
+    ".vscode/css-custom-data.json"
+  ]
 }

@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
 @layer components {
   .menu-panel {
     position: absolute;
@@ -16,6 +18,7 @@
 
     &:popover-open {
       opacity: 1;
+
       @starting-style {
         opacity: 0;
       }
@@ -35,4 +38,30 @@
     top: anchor(top);
     left: anchor(right);
   }
+}
+
+@layer utilities {
+  .region-drag {
+    -webkit-app-region: drag;
+    app-region: drag;
+  }
+
+  .region-no-drag {
+    -webkit-app-region: no-drag;
+    app-region: no-drag;
+  }
+}
+
+@theme {
+  --color-primary-light: #000; /* ? */
+  --color-background-surface-light: #ffffff;
+  --color-highlight-light: #f3f3f3;
+  --color-surface-light: #ffffff;
+
+  --color-primary-dark: #fff;
+  --color-background-surface-dark: #121212;
+  --color-highlight-dark: #303030;
+  --color-surface-dark: #121212;
+
+  --spacing-titlebar: 32px;
 }
