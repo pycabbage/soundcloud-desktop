@@ -1,15 +1,18 @@
 import { WindowTitlebar } from "@soundcloud-desktop/tauri-controls"
+import { cn } from "../utils/cn"
+import { MenuButton, MenuItem, SubMenuItem } from "./menu"
 
 export function Titlebar() {
   return (
-    <>
-      <WindowTitlebar>some content</WindowTitlebar>
-      {/* <nav
+    <WindowTitlebar
+      className="h-titlebar region-drag"
+    >
+      <nav
         aria-label="Application Menu"
         className={cn(
-          "flex px-2 items-center h-titlebar min-w-screen w-screen",
+          "flex px-2 items-center",
           "bg-background-surface-light dark:bg-background-surface-dark",
-          "select-none touch-manipulation region-drag"
+          "select-none touch-manipulation"
         )}
       >
         <MenuButton label="Settings">
@@ -26,7 +29,7 @@ export function Titlebar() {
           </SubMenuItem>
           <MenuItem label="About" />
         </MenuButton>
-      </nav> */}
-    </>
+      </nav>
+    </WindowTitlebar>
   )
 }
