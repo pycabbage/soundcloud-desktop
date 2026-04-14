@@ -1,10 +1,12 @@
-import type { Window } from "@tauri-apps/api/window"
+import { getCurrentWindow } from "@tauri-apps/api/window"
 import type React from "react"
-import { createContext, useCallback, useEffect, useState } from "react"
+import { useEffect } from "react"
+import { create } from "zustand"
 import { getOsType } from "../libs/plugin-os"
 
-interface TauriAppWindowContextType {
-  appWindow: Window | null
+const appWindow = getCurrentWindow()
+
+interface WindowState {
   isWindowMaximized: boolean
   minimizeWindow: () => Promise<void>
   maximizeWindow: () => Promise<void>
@@ -12,110 +14,53 @@ interface TauriAppWindowContextType {
   closeWindow: () => Promise<void>
 }
 
-const TauriAppWindowContext = createContext<TauriAppWindowContextType>({
-  appWindow: null,
+export const useWindowStore = create<WindowState>()((_set) => ({
   isWindowMaximized: false,
-  minimizeWindow: () => Promise.resolve(),
-  maximizeWindow: () => Promise.resolve(),
-  fullscreenWindow: () => Promise.resolve(),
-  closeWindow: () => Promise.resolve(),
-})
+  minimizeWindow: async () => {
+    await appWindow.minimize()
+  },
+  maximizeWindow: async () => {
+    await appWindow.toggleMaximize()
+  },
+  fullscreenWindow: async () => {
+    const fullscreen = await appWindow.isFullscreen()
+    await appWindow.setFullscreen(!fullscreen)
+  },
+  closeWindow: async () => {
+    await appWindow.close()
+  },
+}))
 
 interface TauriAppWindowProviderProps {
   children: React.ReactNode
 }
 
-export const TauriAppWindowProvider: React.FC<TauriAppWindowProviderProps> = ({
+export function TauriAppWindowProvider({
   children,
-}: any) => {
-  const [appWindow, setAppWindow] = useState<Window | null>(null)
-  const [isWindowMaximized, setIsWindowMaximized] = useState(false)
-
-  // Fetch the Tauri window plugin when the component mounts
-  // Dynamically import plugin-window for next.js, sveltekit, nuxt etc. support:
-  // https://github.com/tauri-apps/plugins-workspace/issues/217
+}: TauriAppWindowProviderProps) {
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      import("@tauri-apps/api").then((module) => {
-        setAppWindow(module.window.getCurrent())
-      })
+    let unlisten: (() => void) | undefined
+
+    const init = async () => {
+      const isMaximized = await appWindow.isMaximized()
+      useWindowStore.setState({ isWindowMaximized: isMaximized })
+
+      const osType = getOsType()
+      // temporary: https://github.com/agmmnn/tauri-controls/issues/10#issuecomment-1675884962
+      if (osType !== "macos") {
+        unlisten = await appWindow.onResized(async () => {
+          const maximized = await appWindow.isMaximized()
+          useWindowStore.setState({ isWindowMaximized: maximized })
+        })
+      }
+    }
+
+    init()
+
+    return () => {
+      unlisten?.()
     }
   }, [])
 
-  // Update the isWindowMaximized state when the window is resized
-  const updateIsWindowMaximized = useCallback(async () => {
-    if (appWindow) {
-      const _isWindowMaximized = await appWindow.isMaximized()
-      setIsWindowMaximized(_isWindowMaximized)
-    }
-  }, [appWindow])
-
-  useEffect(() => {
-    getOsType().then((osname) => {
-      // temporary: https://github.com/agmmnn/tauri-controls/issues/10#issuecomment-1675884962
-      if (osname !== "macos") {
-        updateIsWindowMaximized()
-        let unlisten: () => void = () => {}
-
-        const listen = async () => {
-          if (appWindow) {
-            unlisten = await appWindow.onResized(() => {
-              updateIsWindowMaximized()
-            })
-          }
-        }
-        listen()
-
-        // Cleanup the listener when the component unmounts
-        return () => unlisten?.()
-      }
-    })
-  }, [appWindow, updateIsWindowMaximized])
-
-  const minimizeWindow = async () => {
-    if (appWindow) {
-      await appWindow.minimize()
-    }
-  }
-
-  const maximizeWindow = async () => {
-    if (appWindow) {
-      await appWindow.toggleMaximize()
-    }
-  }
-
-  const fullscreenWindow = async () => {
-    if (appWindow) {
-      const fullscreen = await appWindow.isFullscreen()
-      if (fullscreen) {
-        await appWindow.setFullscreen(false)
-      } else {
-        await appWindow.setFullscreen(true)
-      }
-    }
-  }
-
-  const closeWindow = async () => {
-    if (appWindow) {
-      await appWindow.close()
-    }
-  }
-
-  // Provide the context values to the children components
-  return (
-    <TauriAppWindowContext.Provider
-      value={{
-        appWindow,
-        isWindowMaximized,
-        minimizeWindow,
-        maximizeWindow,
-        fullscreenWindow,
-        closeWindow,
-      }}
-    >
-      {children}
-    </TauriAppWindowContext.Provider>
-  )
+  return <>{children}</>
 }
-
-export default TauriAppWindowContext

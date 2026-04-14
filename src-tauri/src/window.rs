@@ -1,4 +1,7 @@
-use tauri::{webview::PageLoadEvent, window::{Color, Effect, EffectsBuilder}};
+use tauri::{
+    webview::PageLoadEvent,
+    window::{Color, Effect, EffectsBuilder},
+};
 use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 use tracing::{debug, error};

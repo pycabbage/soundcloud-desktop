@@ -1,7 +1,7 @@
 import type { OsType } from "@tauri-apps/plugin-os"
 import { useEffect, useState } from "react"
-import { cn } from "src/tauri-controls/libs/utils"
 import { getOsType } from "./libs/plugin-os"
+import { cn } from "./libs/utils"
 import type { WindowTitlebarProps } from "./types"
 import { WindowControls } from "./window-controls"
 
@@ -15,9 +15,7 @@ export function WindowTitlebar({
   const [osType, setOsType] = useState<OsType | undefined>(undefined)
 
   useEffect(() => {
-    getOsType().then((type) => {
-      setOsType(type)
-    })
+    setOsType(getOsType())
   }, [])
 
   const left =
@@ -30,7 +28,7 @@ export function WindowTitlebar({
     if (windowControlsProps?.justify !== undefined) return windowControlsProps
 
     const {
-      justify: windowControlsJustify,
+      justify: _windowControlsJustify,
       className: windowControlsClassName,
       ...restProps
     } = windowControlsProps || {}

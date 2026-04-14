@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes } from "react"
-import { cn } from "src/tauri-controls/libs/utils"
+import { cn } from "../libs/utils"
 
 export function Button({
   className,

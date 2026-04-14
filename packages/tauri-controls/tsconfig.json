@@ -7,15 +7,17 @@
 
     // Environment Settings
     // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
+    "module": "preserve",
     "target": "esnext",
-    "lib": ["esnext"],
+    "lib": ["esnext", "dom"],
     "types": ["bun"],
 
     // Other Outputs
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
+
+    "moduleResolution": "bundler",
 
     // Stricter Typechecking Options
     "noUncheckedIndexedAccess": true,
@@ -32,7 +34,6 @@
     // Recommended Options
     "strict": true,
     "jsx": "react-jsx",
-    "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "noUncheckedSideEffectImports": true,
     "moduleDetection": "force",

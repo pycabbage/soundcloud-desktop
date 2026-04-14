@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
-import { cn } from "src/tauri-controls/libs/utils"
 import { TauriAppWindowProvider } from "./contexts/plugin-window"
-import { Gnome, MacOS, Windows } from "./controls"
+import { Gnome, MacOS, Windows } from "./controls/index"
 import { getOsType } from "./libs/plugin-os"
+import { cn } from "./libs/utils"
 import type { WindowControlsProps } from "./types"
 
 export function WindowControls({
@@ -10,16 +10,13 @@ export function WindowControls({
   justify = false,
   hide = false,
   hideMethod = "display",
-  // linuxDesktop = "gnome",
   className,
   ...props
 }: WindowControlsProps) {
   const [osType, setOsType] = useState<string | undefined>(undefined)
 
   useEffect(() => {
-    getOsType().then((type) => {
-      setOsType(type)
-    })
+    setOsType(getOsType())
   }, [])
 
   const customClass = cn(
@@ -28,22 +25,21 @@ export function WindowControls({
     hide && (hideMethod === "display" ? "hidden" : "invisible")
   )
 
-  // Determine the default platform based on the operating system if not specified
-  if (!platform) {
-    switch (osType) {
-      case "macos":
-        platform = "macos"
-        break
-      case "linux":
-        platform = "gnome"
-        break
-      default:
-        platform = "windows"
-    }
-  }
+  const resolvedPlatform =
+    platform ??
+    (() => {
+      switch (osType) {
+        case "macos":
+          return "macos"
+        case "linux":
+          return "gnome"
+        default:
+          return "windows"
+      }
+    })()
 
-  const ControlsComponent = () => {
-    switch (platform) {
+  const renderControls = () => {
+    switch (resolvedPlatform) {
       case "windows":
         return (
           <Windows
@@ -69,9 +65,5 @@ export function WindowControls({
     }
   }
 
-  return (
-    <TauriAppWindowProvider>
-      <ControlsComponent />
-    </TauriAppWindowProvider>
-  )
+  return <TauriAppWindowProvider>{renderControls()}</TauriAppWindowProvider>
 }

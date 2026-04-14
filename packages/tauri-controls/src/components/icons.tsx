@@ -1,7 +1,7 @@
 import type { SVGProps } from "react"
 
 export const Icons = {
-  minimizeWin: (props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) => (
+  minimizeWin: (props: SVGProps<SVGSVGElement>) => (
     <svg
       width="10"
       height="1"
@@ -17,7 +17,7 @@ export const Icons = {
       />
     </svg>
   ),
-  maximizeWin: (props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) => (
+  maximizeWin: (props: SVGProps<SVGSVGElement>) => (
     <svg
       width="10"
       height="10"
@@ -33,9 +33,7 @@ export const Icons = {
       />
     </svg>
   ),
-  maximizeRestoreWin: (
-    props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>
-  ) => (
+  maximizeRestoreWin: (props: SVGProps<SVGSVGElement>) => (
     <svg
       width="10"
       height="11"
@@ -51,7 +49,7 @@ export const Icons = {
       />
     </svg>
   ),
-  closeWin: (props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) => (
+  closeWin: (props: SVGProps<SVGSVGElement>) => (
     <svg
       width="10"
       height="10"
@@ -67,7 +65,7 @@ export const Icons = {
       />
     </svg>
   ),
-  closeMac: (props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) => (
+  closeMac: (props: SVGProps<SVGSVGElement>) => (
     <svg
       width="6"
       height="6"
@@ -82,7 +80,7 @@ export const Icons = {
       />
     </svg>
   ),
-  minMac: (props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) => (
+  minMac: (props: SVGProps<SVGSVGElement>) => (
     <svg
       width="8"
       height="8"
@@ -101,7 +99,7 @@ export const Icons = {
       </g>
     </svg>
   ),
-  fullMac: (props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) => (
+  fullMac: (props: SVGProps<SVGSVGElement>) => (
     <svg
       width="6"
       height="6"
@@ -120,7 +118,7 @@ export const Icons = {
       </g>
     </svg>
   ),
-  plusMac: (props: JSX.IntrinsicAttributes & SVGProps<SVGSVGElement>) => (
+  plusMac: (props: SVGProps<SVGSVGElement>) => (
     <svg
       width="8"
       height="8"

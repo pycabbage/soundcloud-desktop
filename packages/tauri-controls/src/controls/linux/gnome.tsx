@@ -1,12 +1,12 @@
-import { type HTMLProps, useContext } from "react"
-import { Button } from "src/tauri-controls/components/button"
-import { Icons } from "src/tauri-controls/components/icons"
-import TauriAppWindowContext from "src/tauri-controls/contexts/plugin-window"
-import { cn } from "src/tauri-controls/libs/utils"
+import type { HTMLProps } from "react"
+import { Button } from "../../components/button"
+import { Icons } from "../../components/icons"
+import { useWindowStore } from "../../contexts/plugin-window"
+import { cn } from "../../libs/utils"
 
 export function Gnome({ className, ...props }: HTMLProps<HTMLDivElement>) {
   const { isWindowMaximized, minimizeWindow, maximizeWindow, closeWindow } =
-    useContext(TauriAppWindowContext)
+    useWindowStore()
 
   return (
     <div

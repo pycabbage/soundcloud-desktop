@@ -1,12 +1,12 @@
-import { type HTMLProps, useContext } from "react"
-import { Icons } from "src/tauri-controls/components/icons"
-import TauriAppWindowContext from "src/tauri-controls/contexts/plugin-window"
-import { cn } from "src/tauri-controls/libs/utils"
+import type { HTMLProps } from "react"
 import { Button } from "../components/button"
+import { Icons } from "../components/icons"
+import { useWindowStore } from "../contexts/plugin-window"
+import { cn } from "../libs/utils"
 
 export function Windows({ className, ...props }: HTMLProps<HTMLDivElement>) {
   const { isWindowMaximized, minimizeWindow, maximizeWindow, closeWindow } =
-    useContext(TauriAppWindowContext)
+    useWindowStore()
 
   return (
     <div className={cn("h-8", className)} {...props}>
@@ -21,7 +21,6 @@ export function Windows({ className, ...props }: HTMLProps<HTMLDivElement>) {
         className={cn(
           "max-h-8 w-[46px] cursor-default rounded-none bg-transparent",
           "text-black/90 hover:bg-black/5 active:bg-black/3 dark:text-white dark:hover:bg-white/6 dark:active:bg-white/4"
-          // !isMaximizable && "text-white/36",
         )}
       >
         {!isWindowMaximized ? (
