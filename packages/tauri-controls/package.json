@@ -25,7 +25,15 @@
   },
   "homepage": "https://github.com/pycabbage/soundcloud-desktop#readme",
   "scripts": {
-    "lint": "biome check"
+    "lint": "biome check",
+    "lint:fix": "biome check --fix"
+  },
+  "dependencies": {
+    "zustand": "^5.0.12"
+  },
+  "peerDependencies": {
+    "@types/bun": "^1.3.11",
+    "typescript": "^5"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.11",
@@ -42,12 +50,5 @@
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^6.0.2"
-  },
-  "peerDependencies": {
-    "@types/bun": "^1.3.11",
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "zustand": "^5.0.12"
   }
 }

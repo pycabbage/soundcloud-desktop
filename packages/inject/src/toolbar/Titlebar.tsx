@@ -4,9 +4,7 @@ import { MenuButton, MenuItem, SubMenuItem } from "./menu"
 
 export function Titlebar() {
   return (
-    <WindowTitlebar
-      className="h-titlebar region-drag"
-    >
+    <WindowTitlebar className="h-titlebar region-drag">
       <nav
         aria-label="Application Menu"
         className={cn(
