@@ -22,10 +22,10 @@ interface WebpackRequireFeatures {
 type WebpackRequire = (<R = unknown>(id: string | number) => R) &
   WebpackRequireFeatures
 
-function getFrameWebpackRequire() {
+function getFrameWebpackRequire(): WebpackRequire {
   const frame = getFrame()
   const id = `webpackModulesget_${Date.now()}`
-  let webpackRequire: WebpackRequire
+  let webpackRequire: WebpackRequire | null = null
   frame.contentWindow?.webpackChunk_N_E.push([
     [Symbol(id)],
     {},
@@ -34,8 +34,7 @@ function getFrameWebpackRequire() {
     },
   ])
   frame.contentWindow?.webpackChunk_N_E.pop()
-  // biome-ignore lint/style/noNonNullAssertion: webpackRequire must have assigned
-  if (!webpackRequire!) {
+  if (!webpackRequire) {
     panic("Could not get webpack require function")
   }
   return webpackRequire

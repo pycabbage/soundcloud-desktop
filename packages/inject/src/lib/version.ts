@@ -47,8 +47,7 @@ export function getBackboneVersion(): string {
 interface ReactExports {
   version: string
   createElement: (...args: unknown[]) => unknown
-  // biome-ignore lint/suspicious/noExplicitAny: React internal type is opaque
-  __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED: any
+  __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED: unknown
 }
 
 export function getReactVersion(): string {

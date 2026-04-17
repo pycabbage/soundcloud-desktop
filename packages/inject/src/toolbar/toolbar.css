@@ -39,6 +39,42 @@
     top: anchor(top);
     left: anchor(right);
   }
+
+  .nav-panel {
+    position: absolute;
+    inset: auto;
+    margin: 0;
+    padding: 0 0.25rem;
+
+    /* ハンバーガーボタンの右端・上下に揃えて横展開 */
+    top: 0;
+    height: var(--spacing-titlebar);
+    left: anchor(right);
+
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.25rem;
+
+    /* タイトルバーと馴染ませる */
+    box-shadow: none;
+    border: none;
+
+    /* open/close アニメーション */
+    transition:
+      display 150ms,
+      opacity 150ms;
+    transition-behavior: allow-discrete;
+    opacity: 0;
+
+    &:popover-open {
+      opacity: 1;
+
+      @starting-style {
+        opacity: 0;
+      }
+    }
+  }
 }
 
 @layer utilities {
