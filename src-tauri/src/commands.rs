@@ -1,3 +1,5 @@
+use std::sync::atomic::Ordering;
+
 use tauri::{Manager, State};
 use tracing::info;
 
@@ -7,7 +9,8 @@ use crate::discord::{
 };
 use tauri_plugin_store::StoreExt;
 
-use crate::models::{PlaybackPrefs, SoundAttributes};
+use crate::models::{AppSettings, PlaybackPrefs, SoundAttributes};
+use crate::DiscordEnabled;
 
 #[tauri::command]
 pub async fn event_change_current_sound(
@@ -117,4 +120,102 @@ pub async fn save_repeat_mode(app: tauri::AppHandle, mode: String) -> Result<(),
     let store = app.store("state.json").map_err(|e| e.to_string())?;
     store.set("repeat_mode", mode);
     store.save().map_err(|e| e.to_string())
+}
+
+// ─── Settings commands ────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
+    let store = app.store("settings.json").map_err(|e| e.to_string())?;
+    let defaults = AppSettings::default();
+    Ok(AppSettings {
+        discord_enabled: store
+            .get("discord_enabled")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(defaults.discord_enabled),
+        start_minimized: store
+            .get("start_minimized")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(defaults.start_minimized),
+        autostart: store
+            .get("autostart")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(defaults.autostart),
+    })
+}
+
+#[tauri::command]
+pub async fn save_discord_enabled(
+    app: tauri::AppHandle,
+    enabled: bool,
+    discord_enabled_state: State<'_, DiscordEnabled>,
+    discord_state: State<'_, DiscordState>,
+) -> Result<(), String> {
+    use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
+    use crate::discord::DISCORD_APP_ID;
+    use tracing::warn;
+
+    info!(enabled, "event: save_discord_enabled");
+
+    let store = app.store("settings.json").map_err(|e| e.to_string())?;
+    store.set("discord_enabled", enabled);
+    store.save().map_err(|e| e.to_string())?;
+
+    let prev = discord_enabled_state.0.swap(enabled, Ordering::Relaxed);
+    if prev == enabled {
+        return Ok(());
+    }
+
+    let mut client_guard = discord_state.0.lock().map_err(|e| e.to_string())?;
+    if enabled {
+        let mut client = DiscordIpcClient::new(DISCORD_APP_ID);
+        match client.connect() {
+            Ok(()) => {
+                info!("discord rich presence connected");
+                *client_guard = Some(client);
+            }
+            Err(e) => {
+                warn!(error = %e, "failed to connect to discord (reconnect task will retry)");
+            }
+        }
+    } else if let Some(mut client) = client_guard.take() {
+        if let Err(e) = client.close() {
+            warn!(error = %e, "error closing discord connection");
+        }
+    }
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn save_start_minimized(
+    app: tauri::AppHandle,
+    start_minimized: bool,
+) -> Result<(), String> {
+    info!(start_minimized, "event: save_start_minimized");
+    let store = app.store("settings.json").map_err(|e| e.to_string())?;
+    store.set("start_minimized", start_minimized);
+    store.save().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_autostart(app: tauri::AppHandle, autostart: bool) -> Result<(), String> {
+    info!(autostart, "event: save_autostart");
+
+    let store = app.store("settings.json").map_err(|e| e.to_string())?;
+    store.set("autostart", autostart);
+    store.save().map_err(|e| e.to_string())?;
+
+    #[cfg(desktop)]
+    {
+        use tauri_plugin_autostart::ManagerExt;
+        let autostart_manager = app.autolaunch();
+        if autostart {
+            autostart_manager.enable().map_err(|e| e.to_string())?;
+        } else {
+            autostart_manager.disable().map_err(|e| e.to_string())?;
+        }
+    }
+
+    Ok(())
 }

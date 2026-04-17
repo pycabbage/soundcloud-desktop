@@ -143,3 +143,43 @@ export function MenuItem({ label, onClick }: MenuItemProps) {
     </li>
   )
 }
+
+interface CheckboxMenuItemProps {
+  label: string
+  checked: boolean
+  onChange: () => void | Promise<void>
+}
+export function CheckboxMenuItem({
+  label,
+  checked,
+  onChange,
+}: CheckboxMenuItemProps) {
+  const [isBusy, startTransition] = useTransition()
+
+  return (
+    <li role="none">
+      <button
+        type="button"
+        role="menuitemcheckbox"
+        aria-checked={checked}
+        aria-busy={isBusy}
+        className={cn(
+          "w-full px-4 py-1.5 text-sm text-left flex items-center gap-2",
+          "bg-background-surface-light dark:bg-background-surface-dark",
+          "hover:bg-highlight-light dark:hover:bg-highlight-dark"
+        )}
+        onClick={() => {
+          startTransition(async () => {
+            await onChange()
+          })
+          // ポップオーバーは閉じない — 複数設定を連続操作しやすくするため
+        }}
+      >
+        <span className="w-4 shrink-0 text-center" aria-hidden>
+          {checked ? "✓" : ""}
+        </span>
+        {label}
+      </button>
+    </li>
+  )
+}
