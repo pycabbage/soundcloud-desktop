@@ -39,7 +39,11 @@ export function MenuButton({ label, children }: MenuButtonProps) {
         popover="auto"
         aria-label={label}
         className={cn(
-          "menu-panel m-0 p-1 rounded shadow-xl",
+          "menu-panel absolute inset-auto m-0 p-1 rounded shadow-xl",
+          "min-w-40 opacity-0 [&:popover-open]:opacity-100",
+          "[transition:display_150ms,opacity_150ms]",
+          "transition-discrete",
+          "top-[anchor(bottom)] left-[anchor(left)]",
           "text-primary-light dark:text-primary-dark",
           "bg-background-surface-light dark:bg-background-surface-dark"
         )}
@@ -92,7 +96,8 @@ export function SubMenuItem({ label, children }: SubMenuItemProps) {
         id={id}
         popover="auto"
         className={cn(
-          "submenu-panel m-0 p-1 rounded shadow-xl",
+          "absolute inset-auto m-0 p-1 rounded shadow-xl",
+          "min-w-40 top-[anchor(top)] left-[anchor(right)]",
           "bg-background-surface-light dark:bg-background-surface-dark",
           "text-primary-light dark:text-primary-dark"
         )}

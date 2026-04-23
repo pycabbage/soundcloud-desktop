@@ -4,75 +4,15 @@
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
 @layer components {
-  .menu-panel {
-    position: absolute;
-    inset: auto;
-    margin: 0;
-    min-width: 10rem;
-
-    /* open/close アニメーション */
-    transition:
-      display 150ms,
-      opacity 150ms;
-    transition-behavior: allow-discrete;
-    opacity: 0;
-
-    &:popover-open {
-      opacity: 1;
-
-      @starting-style {
-        opacity: 0;
-      }
+  .menu-panel:popover-open {
+    @starting-style {
+      opacity: 0;
     }
-
-    /* アンカー（ボタン）の左端・下端に合わせる */
-    top: anchor(bottom);
-    left: anchor(left);
   }
 
-  .submenu-panel {
-    position: absolute;
-    inset: auto;
-    margin: 0;
-    min-width: 10rem;
-
-    top: anchor(top);
-    left: anchor(right);
-  }
-
-  .nav-panel {
-    position: absolute;
-    inset: auto;
-    margin: 0;
-    padding: 0 0.25rem;
-
-    /* ハンバーガーボタンの右端・上下に揃えて横展開 */
-    top: 0;
-    height: var(--spacing-titlebar);
-    left: anchor(right);
-
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.25rem;
-
-    /* タイトルバーと馴染ませる */
-    box-shadow: none;
-    border: none;
-
-    /* open/close アニメーション */
-    transition:
-      display 150ms,
-      opacity 150ms;
-    transition-behavior: allow-discrete;
-    opacity: 0;
-
-    &:popover-open {
-      opacity: 1;
-
-      @starting-style {
-        opacity: 0;
-      }
+  .nav-panel:popover-open {
+    @starting-style {
+      opacity: 0;
     }
   }
 }
