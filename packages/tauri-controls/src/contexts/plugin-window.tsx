@@ -1,34 +1,17 @@
 import { getCurrentWindow } from "@tauri-apps/api/window"
+import { type } from "@tauri-apps/plugin-os"
 import type React from "react"
 import { useEffect } from "react"
 import { create } from "zustand"
-import { getOsType } from "../libs/plugin-os"
 
-const appWindow = getCurrentWindow()
+export const appWindow = getCurrentWindow()
 
 interface WindowState {
   isWindowMaximized: boolean
-  minimizeWindow: () => Promise<void>
-  maximizeWindow: () => Promise<void>
-  fullscreenWindow: () => Promise<void>
-  closeWindow: () => Promise<void>
 }
 
-export const useWindowStore = create<WindowState>()((_set) => ({
+export const useWindowStore = create<WindowState>()(() => ({
   isWindowMaximized: false,
-  minimizeWindow: async () => {
-    await appWindow.minimize()
-  },
-  maximizeWindow: async () => {
-    await appWindow.toggleMaximize()
-  },
-  fullscreenWindow: async () => {
-    const fullscreen = await appWindow.isFullscreen()
-    await appWindow.setFullscreen(!fullscreen)
-  },
-  closeWindow: async () => {
-    await appWindow.close()
-  },
 }))
 
 interface TauriAppWindowProviderProps {
@@ -45,9 +28,8 @@ export function TauriAppWindowProvider({
       const isMaximized = await appWindow.isMaximized()
       useWindowStore.setState({ isWindowMaximized: isMaximized })
 
-      const osType = getOsType()
       // temporary: https://github.com/agmmnn/tauri-controls/issues/10#issuecomment-1675884962
-      if (osType !== "macos") {
+      if (type() !== "macos") {
         unlisten = await appWindow.onResized(async () => {
           const maximized = await appWindow.isMaximized()
           useWindowStore.setState({ isWindowMaximized: maximized })

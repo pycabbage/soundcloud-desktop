@@ -1,13 +1,10 @@
 import { type HTMLProps, useEffect, useState } from "react"
 import { Button } from "../components/button"
 import { Icons } from "../components/icons"
-import { useWindowStore } from "../contexts/plugin-window"
+import { appWindow } from "../contexts/plugin-window"
 import { cn } from "../libs/utils"
 
 export function MacOS({ className, ...props }: HTMLProps<HTMLDivElement>) {
-  const { minimizeWindow, maximizeWindow, fullscreenWindow, closeWindow } =
-    useWindowStore()
-
   const [isAltKeyPressed, setIsAltKeyPressed] = useState(false)
   const [isHovering, setIsHovering] = useState(false)
 
@@ -46,19 +43,26 @@ export function MacOS({ className, ...props }: HTMLProps<HTMLDivElement>) {
       {...props}
     >
       <Button
-        onClick={closeWindow}
+        onClick={() => appWindow.close()}
         className="aspect-square h-3 w-3 cursor-default content-center items-center justify-center self-center rounded-full border border-black/12 bg-[#ff544d] text-center text-black/60 hover:bg-[#ff544d] active:bg-[#bf403a] active:text-black/60 dark:border-none"
       >
         {isHovering && <Icons.closeMac />}
       </Button>
       <Button
-        onClick={minimizeWindow}
+        onClick={() => appWindow.minimize()}
         className="aspect-square h-3 w-3 cursor-default content-center items-center justify-center self-center rounded-full border border-black/12  bg-[#ffbd2e] text-center text-black/60 hover:bg-[#ffbd2e] active:bg-[#bf9122] active:text-black/60 dark:border-none"
       >
         {isHovering && <Icons.minMac />}
       </Button>
       <Button
-        onClick={isAltKeyPressed ? maximizeWindow : fullscreenWindow}
+        onClick={async () => {
+          if (isAltKeyPressed) {
+            await appWindow.toggleMaximize()
+          } else {
+            const isFullscreen = await appWindow.isFullscreen()
+            await appWindow.setFullscreen(!isFullscreen)
+          }
+        }}
         className="aspect-square h-3 w-3 cursor-default content-center items-center justify-center self-center rounded-full border border-black/12 bg-[#28c93f] text-center text-black/60 hover:bg-[#28c93f] active:bg-[#1e9930] active:text-black/60 dark:border-none"
       >
         {isHovering && last}

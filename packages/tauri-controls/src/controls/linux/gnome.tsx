@@ -1,12 +1,11 @@
 import type { HTMLProps } from "react"
 import { Button } from "../../components/button"
 import { Icons } from "../../components/icons"
-import { useWindowStore } from "../../contexts/plugin-window"
+import { appWindow, useWindowStore } from "../../contexts/plugin-window"
 import { cn } from "../../libs/utils"
 
 export function Gnome({ className, ...props }: HTMLProps<HTMLDivElement>) {
-  const { isWindowMaximized, minimizeWindow, maximizeWindow, closeWindow } =
-    useWindowStore()
+  const isWindowMaximized = useWindowStore((state) => state.isWindowMaximized)
 
   return (
     <div
@@ -14,13 +13,13 @@ export function Gnome({ className, ...props }: HTMLProps<HTMLDivElement>) {
       {...props}
     >
       <Button
-        onClick={minimizeWindow}
+        onClick={() => appWindow.minimize()}
         className="m-0 aspect-square h-6 w-6 cursor-default rounded-full bg-[#dadada] p-0 text-[#3d3d3d] hover:bg-[#d1d1d1] active:bg-[#bfbfbf] dark:bg-[#373737] dark:text-white dark:hover:bg-[#424242] dark:active:bg-[#565656]"
       >
         <Icons.minimizeWin className="h-[9px] w-[9px]" />
       </Button>
       <Button
-        onClick={maximizeWindow}
+        onClick={() => appWindow.toggleMaximize()}
         className="m-0 aspect-square h-6 w-6 cursor-default rounded-full bg-[#dadada] p-0 text-[#3d3d3d] hover:bg-[#d1d1d1] active:bg-[#bfbfbf] dark:bg-[#373737] dark:text-white dark:hover:bg-[#424242] dark:active:bg-[#565656]"
       >
         {!isWindowMaximized ? (
@@ -30,7 +29,7 @@ export function Gnome({ className, ...props }: HTMLProps<HTMLDivElement>) {
         )}
       </Button>
       <Button
-        onClick={closeWindow}
+        onClick={() => appWindow.close()}
         className="m-0 aspect-square h-6 w-6 cursor-default rounded-full bg-[#dadada] p-0 text-[#3d3d3d] hover:bg-[#d1d1d1] active:bg-[#bfbfbf] dark:bg-[#373737] dark:text-white dark:hover:bg-[#424242] dark:active:bg-[#565656]"
       >
         <Icons.closeWin className="h-2 w-2" />
