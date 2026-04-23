@@ -1,14 +1,12 @@
 /// <reference types="bun" />
 
+import { transform } from "@svgr/core"
 import tailwindPostCSSPlugin from "@tailwindcss/postcss"
 import postcss from "postcss"
 import { compileAsync } from "sass"
 
 const isProd = Bun.env.NODE_ENV === "production"
 
-/**
- * Bundle SCSS
- */
 const SCSSLoaderPlugin: Bun.BunPlugin = {
   name: "scss-loader",
   setup(build) {
@@ -39,11 +37,39 @@ const PostCSSLoaderPlugin: Bun.BunPlugin = {
   },
 }
 
+const SVGComponentPlugin: Bun.BunPlugin = {
+  name: "svg-component",
+  setup(build) {
+    build.onLoad({ filter: /\.svg$/ }, async ({ path }) => {
+      const svg = await Bun.file(path).text()
+      const name =
+        path
+          .split(/[/\\]/)
+          .pop()
+          ?.replace(/\.svg$/, "") ?? "SvgComponent"
+      const componentName = name.replace(/(^|_)([a-z])/g, (_, __, c) =>
+        c.toUpperCase()
+      )
+      const contents = transform.sync(
+        svg,
+        {
+          plugins: ["@svgr/plugin-svgo", "@svgr/plugin-jsx"],
+          icon: true,
+          dimensions: false,
+          jsxRuntime: "automatic",
+        },
+        { componentName }
+      )
+      return { contents, loader: "jsx" }
+    })
+  },
+}
+
 await Bun.build({
   entrypoints: ["./src/index.ts"],
   target: "browser",
   format: "iife",
   outdir: "./dist",
   minify: isProd,
-  plugins: [SCSSLoaderPlugin, PostCSSLoaderPlugin],
+  plugins: [SCSSLoaderPlugin, PostCSSLoaderPlugin, SVGComponentPlugin],
 })

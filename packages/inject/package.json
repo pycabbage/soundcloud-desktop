@@ -23,6 +23,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.9",
+    "@svgr/core": "^8.1.0",
+    "@svgr/plugin-jsx": "^8.1.0",
+    "@svgr/plugin-svgo": "^8.1.0",
     "@types/backbone": "^1.4.23",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
