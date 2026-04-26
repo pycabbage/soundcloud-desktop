@@ -2,6 +2,23 @@
   --titlebar-height: 32px;
 }
 
+html {
+  overflow: hidden;
+}
+
+body {
+  overflow: hidden;
+}
+
+#app {
+  position: absolute;
+  top: var(--titlebar-height);
+  bottom: 0;
+  left: 0;
+  right: 0;
+  overflow-y: auto;
+}
+
 body.theme-dark {
   --background-surface-color-original: #121212;
   --background-surface-color: rgba(0, 0, 0, 0.7);
@@ -9,6 +26,7 @@ body.theme-dark {
   --highlight-color: rgba(48, 48, 48, 0.7);
   --surface-color-original: #121212;
   --surface-color: rgba(0, 0, 0, 0.7);
+  color-scheme: dark;
 }
 body.theme-light {
   --background-surface-color-original: #ffffff;
@@ -17,6 +35,7 @@ body.theme-light {
   --highlight-color: rgba(243, 243, 243, 0.7);
   --surface-color-original: #ffffff;
   --surface-color: rgba(255, 255, 255, 0.7);
+  color-scheme: light;
 }
 
 header.header,
@@ -56,11 +75,4 @@ article.sidebarModule.mobileApps {
 /* Hide "Fans" sidebar */
 div.webiEmbeddedModule {
   display: none;
-}
-
-header.header {
-  top: var(--titlebar-height);
-}
-.l-container.l-content {
-  padding-top: calc(var(--titlebar-height) + 46px);
 }
