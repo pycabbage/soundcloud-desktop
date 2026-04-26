@@ -5,7 +5,8 @@
   ],
   "scripts": {
     "lint": "turbo lint",
-    "lint:fix": "turbo lint:fix"
+    "lint:fix": "turbo lint:fix",
+    "build": "turbo build"
   },
   "devDependencies": {
     "turbo": "^2.9.6"

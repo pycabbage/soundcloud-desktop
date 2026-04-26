@@ -64,10 +64,10 @@ listen("play-pause", () => {
   playManager.toggleCurrent()
 })
 listen("next", () => {
-  playManager.playNext()
+  playManager.playNext({ userInitiated: true })
 })
 listen("previous", () => {
-  playManager.playPrev()
+  playManager.playPrev({ userInitiated: true })
 })
 
 async function init() {

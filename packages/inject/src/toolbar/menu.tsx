@@ -13,7 +13,6 @@ interface MenuButtonProps {
 }
 export function MenuButton({ label, children }: MenuButtonProps) {
   const id = useId()
-  const popoverRef = useRef<HTMLUListElement>(null)
 
   return (
     <>
@@ -34,14 +33,13 @@ export function MenuButton({ label, children }: MenuButtonProps) {
       </button>
 
       <ul
-        ref={popoverRef}
         id={id}
         popover="auto"
         aria-label={label}
         className={cn(
-          "menu-panel absolute inset-auto m-0 p-1 rounded shadow-xl",
-          "min-w-40 opacity-0 [&:popover-open]:opacity-100",
-          "[transition:display_150ms,opacity_150ms]",
+          "absolute inset-auto m-0 p-1 rounded shadow-xl",
+          "min-w-40",
+          "[transition:display_150ms]",
           "transition-discrete",
           "top-[anchor(bottom)] left-[anchor(left)]",
           "text-primary-light dark:text-primary-dark",
@@ -177,7 +175,6 @@ export function CheckboxMenuItem({
           startTransition(async () => {
             await onChange()
           })
-          // ポップオーバーは閉じない — 複数設定を連続操作しやすくするため
         }}
       >
         <span className="w-4 shrink-0 text-center" aria-hidden>

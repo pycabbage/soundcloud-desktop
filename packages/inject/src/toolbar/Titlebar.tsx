@@ -55,13 +55,12 @@ export function Titlebar() {
           role="menu"
           aria-label="Application Menu"
           className={cn(
-            "nav-panel absolute m-0",
+            "absolute m-0",
             "top-0 right-auto bottom-auto left-[anchor(right)]",
             "h-titlebar px-1",
-            "flex flex-row items-center gap-1",
+            "[&:popover-open]:flex flex-row items-center gap-1",
             "shadow-none border-0",
-            "opacity-0 [&:popover-open]:opacity-100",
-            "[transition:display_150ms,opacity_150ms]",
+            "[transition:display_150ms]",
             "transition-discrete",
             "bg-background-surface-light dark:bg-background-surface-dark",
             "select-none touch-manipulation"

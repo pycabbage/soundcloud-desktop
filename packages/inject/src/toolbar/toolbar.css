@@ -3,20 +3,6 @@
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-@layer components {
-  .menu-panel:popover-open {
-    @starting-style {
-      opacity: 0;
-    }
-  }
-
-  .nav-panel:popover-open {
-    @starting-style {
-      opacity: 0;
-    }
-  }
-}
-
 @layer utilities {
   .region-drag {
     -webkit-app-region: drag;

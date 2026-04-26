@@ -6,11 +6,11 @@ A Tauri v2 desktop application that wraps the SoundCloud website in a WebView an
 a TypeScript script to expose playback controls as native OS media keys.
 
 Architecture:
+
 - `packages/inject/` — TypeScript browser injection script (built with Bun bundler → IIFE)
 - `src-tauri/` — Rust/Tauri backend that loads SoundCloud in a WebView and evals the bundle
 
 The Rust backend reads `packages/inject/dist/index.js` at runtime, so the inject package
-**must be rebuilt** before running the Tauri app whenever TypeScript sources change.
 
 ---
 
@@ -64,7 +64,7 @@ cargo test --lib -- truncate_discord_text
 
 ## Repository Structure
 
-```
+```plaintext
 soundcloud-desktop/
 ├── packages/
 │   └── inject/               # TypeScript injection script
@@ -134,6 +134,7 @@ Functions in Layer A should be pure and unit-testable.
 ### Formatter (Biome)
 
 Run `bunx biome check --write` to auto-format. Config in `biome.json`:
+
 - 2-space indentation, double quotes, semicolons as needed
 - ES5 trailing commas, auto-organize imports
 
@@ -181,5 +182,10 @@ let Some((attrs, pos, was_playing)) = result else {
 1. After editing TypeScript: `cd packages/inject && bun run build`
 2. After editing Rust: `cargo check --lib` to verify compilation
 3. `cargo tauri dev` auto-builds inject via `beforeDevCommand`
-4. `dist/index.js` is committed — app works without build step for end users
-```
+
+---
+
+## User development workflow guidelines
+
+- Before starting on frontend tasks, always run the `agent-browser --auto-connect ...` command on the subagent to check the status.
+- Before working on unfamiliar areas of the Soundcloud internal API, always investigate [packages/vendor](packages/vendor) to understand the situation.

@@ -13,10 +13,11 @@ body {
 #app {
   position: absolute;
   top: var(--titlebar-height);
-  bottom: 0;
+  bottom: 48px;
   left: 0;
   right: 0;
   overflow-y: auto;
+  padding-bottom: 3rem;
 }
 
 body.theme-dark {
