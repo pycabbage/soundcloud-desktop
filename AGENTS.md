@@ -189,3 +189,9 @@ let Some((attrs, pos, was_playing)) = result else {
 
 - Before starting on frontend tasks, always run the `agent-browser --auto-connect ...` command on the subagent to check the status.
 - Before working on unfamiliar areas of the Soundcloud internal API, always investigate [packages/vendor](packages/vendor) to understand the situation.
+
+---
+
+## Design Principles
+
+- **Rust primary**: Rust handles all the logic. The JavaScript side focuses solely on communication with the Rust process, event handling, and processing that can only be done in JavaScript (such as controlling toolbar menus). JavaScript does not implement any logic itself.
