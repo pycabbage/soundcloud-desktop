@@ -27,6 +27,7 @@ pub fn setup(
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "show_window", "Show Window", true, None::<&str>)?,
             &PredefinedMenuItem::separator(app)?,
+            &MenuItem::with_id(app, "check_updates", "Check for Updates", true, None::<&str>)?,
             &MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?,
         ],
     )?;
@@ -47,6 +48,12 @@ pub fn on_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
     match event.id.as_ref() {
         "quit" => {
             app.exit(0);
+        }
+        "check_updates" => {
+            let app_handle = app.clone();
+            tokio::spawn(async move {
+                crate::updater::handle_check_updates(app_handle, true).await;
+            });
         }
         "play_pause" => {
             debug!("Play/Pause menu item clicked");

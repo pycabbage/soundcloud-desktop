@@ -23,6 +23,7 @@
     "window-state:default",
     "store:default",
     "updater:default",
+    "notification:default",
     "autostart:default",
     "core:window:allow-close",
     "core:window:allow-center",

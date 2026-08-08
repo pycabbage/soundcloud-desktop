@@ -33,7 +33,9 @@ tauri-plugin-os = "2"
 tauri-plugin-autostart = "2"
 tauri-plugin-single-instance = "2"
 tauri-plugin-updater = "2"
+tauri-plugin-notification = "2"
 tauri-plugin-window-state = "2"
+url = "2"
 
 [target.armv7-unknown-linux-gnueabihf]
 linker = "arm-linux-gnueabihf-gcc"
