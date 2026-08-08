@@ -25,11 +25,11 @@ bun install
 # Build the inject bundle (outputs to packages/inject/dist/index.js)
 cd packages/inject && bun run build
 
-# Lint (Biome)
+# Lint (oxlint + oxfmt --check, run concurrently)
 cd packages/inject && bun run lint
 
-# Auto-fix lint issues
-cd packages/inject && bunx biome check --write
+# Auto-fix lint and formatting issues
+cd packages/inject && bun run lint:fix
 ```
 
 ### Rust / Tauri (src-tauri)
@@ -74,7 +74,8 @@ soundcloud-desktop/
 │       │   └── types/        # SoundCloud internal type definitions
 │       ├── scripts/build.ts   # Bun.build() config — IIFE bundle
 │       ├── dist/              # Build output (committed)
-│       ├── biome.json         # Linter/formatter config
+│       ├── .oxlintrc.json     # Linter config (oxlint)
+│       ├── .oxfmtrc.json      # Formatter config (oxfmt)
 │       └── tsconfig.json
 └── src-tauri/
     ├── src/
@@ -131,12 +132,17 @@ Functions in Layer A should be pure and unit-testable.
 
 ## TypeScript Code Style
 
-### Formatter (Biome)
+### Linter/Formatter (oxlint + oxfmt)
 
-Run `bunx biome check --write` to auto-format. Config in `biome.json`:
+Run `bun run lint:fix` to auto-format and auto-fix lint issues. Config in `.oxlintrc.json`
+(lint) and `.oxfmtrc.json` (format):
 
-- 2-space indentation, double quotes, semicolons as needed
-- ES5 trailing commas, auto-organize imports
+- 2-space indentation, double quotes, semicolons omitted unless required
+- ES5 trailing commas, auto-sorted imports and Tailwind classes
+- Suppress a rule for one line with `// oxlint-disable-next-line <plugin>/<rule> -- <reason>`
+  — the reason after `--` is required
+- Ignored paths (e.g. `dist`) are listed in each package's `.oxlintrc.json` /
+  `.oxfmtrc.json` under `ignorePatterns`, not a shared root-level ignore file
 
 ### Imports
 

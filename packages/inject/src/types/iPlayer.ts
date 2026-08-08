@@ -118,14 +118,10 @@ export interface IPlayer {
   setAudioReporter(reporter: (event: AudioReporterEvent) => void): void
 
   /** Set the audio performance analytics reporter. */
-  setAudioPerformanceReporter(
-    reporter: (event: AudioPerformanceReporterEvent) => void
-  ): void
+  setAudioPerformanceReporter(reporter: (event: AudioPerformanceReporterEvent) => void): void
 
   /** Set the audio error analytics reporter. */
-  setAudioErrorReporter(
-    reporter: (event: AudioErrorReporterEvent) => void
-  ): void
+  setAudioErrorReporter(reporter: (event: AudioErrorReporterEvent) => void): void
 
   /** Enable or disable auth token refresh. */
   setRefreshTokenEnabled(enabled: boolean): void

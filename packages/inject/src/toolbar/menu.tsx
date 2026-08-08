@@ -1,10 +1,5 @@
-import {
-  type MouseEventHandler,
-  type ReactNode,
-  useId,
-  useRef,
-  useTransition,
-} from "react"
+import { type MouseEventHandler, type ReactNode, useId, useRef, useTransition } from "react"
+
 import { cn } from "../utils/cn"
 
 interface MenuButtonProps {
@@ -152,11 +147,7 @@ interface CheckboxMenuItemProps {
   checked: boolean
   onChange: () => void | Promise<void>
 }
-export function CheckboxMenuItem({
-  label,
-  checked,
-  onChange,
-}: CheckboxMenuItemProps) {
+export function CheckboxMenuItem({ label, checked, onChange }: CheckboxMenuItemProps) {
   const [isBusy, startTransition] = useTransition()
 
   return (

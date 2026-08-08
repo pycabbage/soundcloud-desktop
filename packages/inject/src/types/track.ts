@@ -19,7 +19,6 @@ import type { DisabledReason } from "./utils.js"
  * MiniPlayerTrack, and MiniPlayerTrackWithoutUser GraphQL fragments,
  * plus the "set-current-track" V2 bridge message schema.
  *
- * @remarks
  * Fields marked optional may be absent when the track originates from the V2 bridge
  * ("set-current-track" message), which only carries display metadata.
  * Audio-specific fields (transcodings, authorization, etc.) are present when

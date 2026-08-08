@@ -52,9 +52,7 @@ export interface NativePlayer extends IPlayer {
   /** Audio analytics reporter. */
   audioReporter: ((event: AudioReporterEvent) => void) | undefined
   /** Audio performance analytics reporter. */
-  audioPerformanceReporter:
-    | ((event: AudioPerformanceReporterEvent) => void)
-    | undefined
+  audioPerformanceReporter: ((event: AudioPerformanceReporterEvent) => void) | undefined
   /** Audio error analytics reporter. */
   audioErrorReporter: ((event: AudioErrorReporterEvent) => void) | undefined
 

@@ -1,13 +1,12 @@
 {
   "name": "@soundcloud-desktop/inject",
-  "private": true,
-  "module": "src/index.ts",
   "type": "module",
+  "module": "src/index.ts",
   "scripts": {
     "build": "bun run scripts/build.ts",
     "typecheck": "tsc --noEmit",
-    "lint": "biome check",
-    "lint:fix": "biome check --fix"
+    "lint": "concurrently \"oxfmt --check\" \"oxlint\"",
+    "lint:fix": "concurrently \"oxfmt\" \"oxlint --fix\""
   },
   "dependencies": {
     "@soundcloud-desktop/tauri-controls": "workspace:*",
@@ -22,13 +21,16 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.7",
     "@svgr/core": "^8.1.0",
     "@svgr/plugin-jsx": "^8.1.0",
     "@svgr/plugin-svgo": "^8.1.0",
     "@types/backbone": "^1.4.23",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+    "concurrently": "^10.0.4",
+    "oxfmt": "^0.62.0",
+    "oxlint": "^1.77.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "postcss-load-config": "^6.0.1",
     "sass": "^1.102.0"
   },

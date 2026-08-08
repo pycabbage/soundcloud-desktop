@@ -11,10 +11,7 @@ import type { DestroyManager } from "./destroyManager.js"
 import type { GlobalEventBus } from "./globalEventBus.js"
 import type { InitialSourceStream } from "./initialSourceStream.js"
 import type { PlayManagerEventMap } from "./playManagerEventMap.js"
-import type {
-  PlayManagerStateName,
-  PlayManagerStates,
-} from "./playManagerStates.js"
+import type { PlayManagerStateName, PlayManagerStates } from "./playManagerStates.js"
 import type { PlayQueue } from "./playQueue.js"
 import type { PlaySource } from "./playSource.js"
 import type { QueueItem } from "./queueItem.js"
@@ -47,11 +44,7 @@ export interface PlayManager extends Backbone.Events {
     callback: PlayManagerEventMap[K],
     context?: unknown
   ): this
-  on(
-    eventName: string,
-    callback: (...args: unknown[]) => void,
-    context?: unknown
-  ): this
+  on(eventName: string, callback: (...args: unknown[]) => void, context?: unknown): this
   on(eventMap: Backbone.EventMap, context?: unknown): this
 
   off<K extends keyof PlayManagerEventMap>(
@@ -59,11 +52,7 @@ export interface PlayManager extends Backbone.Events {
     callback?: PlayManagerEventMap[K],
     context?: unknown
   ): this
-  off(
-    eventName?: string,
-    callback?: (...args: unknown[]) => void,
-    context?: unknown
-  ): this
+  off(eventName?: string, callback?: (...args: unknown[]) => void, context?: unknown): this
   off(eventMap: Backbone.EventMap, context?: unknown): this
 
   trigger<K extends keyof PlayManagerEventMap>(
@@ -77,11 +66,7 @@ export interface PlayManager extends Backbone.Events {
     callback: PlayManagerEventMap[K],
     context?: unknown
   ): this
-  once(
-    eventName: string,
-    callback: (...args: unknown[]) => void,
-    context?: unknown
-  ): this
+  once(eventName: string, callback: (...args: unknown[]) => void, context?: unknown): this
   once(eventMap: Backbone.EventMap, context?: unknown): this
 
   listenTo<K extends keyof PlayManagerEventMap>(
@@ -89,11 +74,7 @@ export interface PlayManager extends Backbone.Events {
     eventName: K,
     callback: PlayManagerEventMap[K]
   ): this
-  listenTo(
-    obj: Backbone.Events,
-    eventName: string,
-    callback: (...args: unknown[]) => void
-  ): this
+  listenTo(obj: Backbone.Events, eventName: string, callback: (...args: unknown[]) => void): this
   listenTo(obj: Backbone.Events, eventMap: Backbone.EventMap): this
 
   stopListening(
@@ -245,11 +226,7 @@ export interface PlayManager extends Backbone.Events {
    * @param cursorIndex — index to set as the current item.
    * @param options — additional options.
    */
-  replaceQueue(
-    items: QueueItem[],
-    cursorIndex: number,
-    options?: Record<string, unknown>
-  ): void
+  replaceQueue(items: QueueItem[], cursorIndex: number, options?: Record<string, unknown>): void
 
   /**
    * Add a track to the "Next Up" explicit queue.
@@ -377,11 +354,7 @@ export interface PlayManager extends Backbone.Events {
    * Set a named state flag. Fires "state:{name}" if the value changed.
    * @param silent — if true, suppress the event.
    */
-  toggleState(
-    name: PlayManagerStateName,
-    value?: boolean,
-    silent?: boolean
-  ): this
+  toggleState(name: PlayManagerStateName, value?: boolean, silent?: boolean): this
   toggleState(name: string, value?: boolean, silent?: boolean): this
 
   /**
@@ -415,10 +388,7 @@ export interface PlayManager extends Backbone.Events {
   /**
    * Set the initial history source for the "previous" direction.
    */
-  setInitialHistorySource(
-    source: PlaySource,
-    metadata: ContextSnapshot | null
-  ): void
+  setInitialHistorySource(source: PlaySource, metadata: ContextSnapshot | null): void
 
   /**
    * Set the initial source for deferred autoplay.

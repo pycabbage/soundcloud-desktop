@@ -1,12 +1,14 @@
 import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
 import { createStore } from "zustand/vanilla"
-import injectStyles from "./inject.scss"
+
 import { getPlayManager } from "./lib/playManager"
 import { insertTitlebar } from "./toolbar"
 import type { Sound } from "./types/sound"
 import type { SoundEventObject } from "./types/soundEventObject"
 import type { RepeatMode } from "./types/utils"
+
+import injectStyles from "./inject.scss"
 
 const playManager = getPlayManager()
 
@@ -60,13 +62,13 @@ playManager.on("change:currentSound", async (payload) => {
   }
 })
 
-listen("play-pause", () => {
+void listen("play-pause", () => {
   playManager.toggleCurrent()
 })
-listen("next", () => {
+void listen("next", () => {
   playManager.playNext({ userInitiated: true })
 })
-listen("previous", () => {
+void listen("previous", () => {
   playManager.playPrev({ userInitiated: true })
 })
 
@@ -78,7 +80,6 @@ async function init() {
   })
 
   if (playManager.hasCurrentSound()) {
-    // biome-ignore lint/style/noNonNullAssertion: We check if there is a current sound, so it can't be null
     const currentSound = playManager.getCurrentSound()!
     soundStore.getState().updateSound(currentSound)
     await invoke("event_change_current_sound", {
@@ -86,9 +87,7 @@ async function init() {
     })
   }
 
-  const prefs = await invoke<{ shuffle: boolean; repeat_mode: RepeatMode }>(
-    "post_init"
-  )
+  const prefs = await invoke<{ shuffle: boolean; repeat_mode: RepeatMode }>("post_init")
   const currentShuffle = playManager.getState("shuffle")
   const { repeatMode: currentRepeatMode } = playManager.getQueueState()
 
@@ -114,4 +113,4 @@ async function init() {
   console.debug("[sc-desktop] Init complete")
 }
 
-init()
+void init()

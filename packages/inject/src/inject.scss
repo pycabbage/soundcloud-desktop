@@ -44,15 +44,18 @@ div.dropdownMenu,
 .modal__modal {
   background-color: var(--background-surface-color-original);
 }
-.playControls__bg, .playControls__inner {
+.playControls__bg,
+.playControls__inner {
   background-color: var(--highlight-color-original);
 }
-.dialog, .dialog__arrow,
+.dialog,
+.dialog__arrow,
 .linkMenu,
 .queue {
   background: var(--surface-color-original);
 }
-.sc-button.sc-button-tertiary, .sc-button.sc-button-tertiary:visited {
+.sc-button.sc-button-tertiary,
+.sc-button.sc-button-tertiary:visited {
   background: transparent;
 }
 

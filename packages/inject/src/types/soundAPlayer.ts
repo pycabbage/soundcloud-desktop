@@ -39,8 +39,5 @@ export interface SoundAPlayer {
   /** Returns the currently buffered time range, or null. */
   getCurrentBufferedTimeRange(): { end: number } | null
   /** Add an event listener. Returns a handle with a remove() method. */
-  addEventListener(
-    event: string,
-    handler: (...args: unknown[]) => void
-  ): { remove(): void }
+  addEventListener(event: string, handler: (...args: unknown[]) => void): { remove(): void }
 }

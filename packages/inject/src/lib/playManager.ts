@@ -8,7 +8,6 @@ export function getPlayManager() {
       ["getCurrentSound", "cycleRepeatMode", "toggleShuffle"],
       false,
       getWebpackRequire()
-    ) as PlayManager | undefined) ||
-    panic("Could not find the play manager module")
+    ) as PlayManager | undefined) || panic("Could not find the play manager module")
   )
 }

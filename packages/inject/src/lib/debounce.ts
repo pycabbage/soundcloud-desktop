@@ -6,11 +6,7 @@ export function throttle<A extends unknown[], R>(
   let lastCalledAt: number | null = null
   return (...args: A) => {
     const now = Date.now()
-    if (
-      lastCalledAt === null ||
-      now - lastCalledAt >= delay ||
-      lastResult === null
-    ) {
+    if (lastCalledAt === null || now - lastCalledAt >= delay || lastResult === null) {
       lastCalledAt = now
       lastResult = fn(...args)
     }

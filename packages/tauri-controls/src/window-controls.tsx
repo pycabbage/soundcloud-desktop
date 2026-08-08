@@ -1,4 +1,5 @@
 import { type } from "@tauri-apps/plugin-os"
+
 import { TauriAppWindowProvider } from "./contexts/plugin-window"
 import { Gnome, MacOS, Windows } from "./controls/index"
 import { cn } from "./libs/utils"
@@ -34,27 +35,13 @@ export function WindowControls({
   const renderControls = () => {
     switch (resolvedPlatform) {
       case "windows":
-        return (
-          <Windows
-            className={cn(customClass, justify && "ml-auto")}
-            {...props}
-          />
-        )
+        return <Windows className={cn(customClass, justify && "ml-auto")} {...props} />
       case "macos":
-        return (
-          <MacOS className={cn(customClass, justify && "ml-0")} {...props} />
-        )
+        return <MacOS className={cn(customClass, justify && "ml-0")} {...props} />
       case "gnome":
-        return (
-          <Gnome className={cn(customClass, justify && "ml-auto")} {...props} />
-        )
+        return <Gnome className={cn(customClass, justify && "ml-auto")} {...props} />
       default:
-        return (
-          <Windows
-            className={cn(customClass, justify && "ml-auto")}
-            {...props}
-          />
-        )
+        return <Windows className={cn(customClass, justify && "ml-auto")} {...props} />
     }
   }
 

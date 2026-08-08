@@ -38,4 +38,4 @@ export const useSettingsStore = create<SettingsStore>((set) => ({
   },
 }))
 
-useSettingsStore.getState().initialize()
+void useSettingsStore.getState().initialize()

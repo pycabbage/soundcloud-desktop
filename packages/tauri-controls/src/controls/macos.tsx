@@ -1,4 +1,5 @@
 import { type HTMLProps, useEffect, useState } from "react"
+
 import { Button } from "../components/button"
 import { Icons } from "../components/icons"
 import { appWindow } from "../contexts/plugin-window"
@@ -32,12 +33,8 @@ export function MacOS({ className, ...props }: HTMLProps<HTMLDivElement>) {
   }, [])
 
   return (
-    // biome-ignore lint/a11y/noStaticElementInteractions: window controls hover detection
     <div
-      className={cn(
-        "space-x-2 px-3 text-black active:text-black dark:text-black",
-        className
-      )}
+      className={cn("space-x-2 px-3 text-black active:text-black dark:text-black", className)}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
       {...props}
@@ -50,7 +47,7 @@ export function MacOS({ className, ...props }: HTMLProps<HTMLDivElement>) {
       </Button>
       <Button
         onClick={() => appWindow.minimize()}
-        className="aspect-square h-3 w-3 cursor-default content-center items-center justify-center self-center rounded-full border border-black/12  bg-[#ffbd2e] text-center text-black/60 hover:bg-[#ffbd2e] active:bg-[#bf9122] active:text-black/60 dark:border-none"
+        className="aspect-square h-3 w-3 cursor-default content-center items-center justify-center self-center rounded-full border border-black/12 bg-[#ffbd2e] text-center text-black/60 hover:bg-[#ffbd2e] active:bg-[#bf9122] active:text-black/60 dark:border-none"
       >
         {isHovering && <Icons.minMac />}
       </Button>

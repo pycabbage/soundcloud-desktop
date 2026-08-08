@@ -7,5 +7,4 @@ export const PlayManagerEvents = {
   PLAYQUEUE_RESUMED: "change:playQueueResumed",
 } as const
 
-export type PlayManagerEventName =
-  (typeof PlayManagerEvents)[keyof typeof PlayManagerEvents]
+export type PlayManagerEventName = (typeof PlayManagerEvents)[keyof typeof PlayManagerEvents]

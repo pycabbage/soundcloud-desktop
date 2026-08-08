@@ -1,5 +1,6 @@
 import { WindowTitlebar } from "@soundcloud-desktop/tauri-controls"
 import { useId } from "react"
+
 import { cn } from "../utils/cn"
 import List from "./ic_fluent_list_24_filled.svg"
 import { CheckboxMenuItem, MenuButton } from "./menu"
@@ -42,11 +43,7 @@ export function Titlebar() {
           )}
           style={{ anchorName: `--anchor-${navId}` }}
         >
-          <List
-            aria-hidden="true"
-            focusable={false}
-            className={cn("w-4 h-4", "fill-current")}
-          />
+          <List aria-hidden="true" focusable={false} className={cn("w-4 h-4", "fill-current")} />
         </button>
 
         <div

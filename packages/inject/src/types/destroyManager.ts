@@ -22,9 +22,5 @@ export interface DestroyManager extends Backbone.Events {
   /** Toggle the follow state on the given model. */
   follow(model: unknown, state: boolean, opts?: Record<string, unknown>): void
   /** Post a comment on the given model. */
-  comment(
-    model: unknown,
-    comment: unknown,
-    opts?: Record<string, unknown>
-  ): void
+  comment(model: unknown, comment: unknown, opts?: Record<string, unknown>): void
 }

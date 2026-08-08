@@ -9,9 +9,8 @@ interface WebpackIFrameElement extends HTMLIFrameElement {
 
 function getFrame() {
   return (
-    document.querySelector<WebpackIFrameElement>(
-      'iframe[src*="/n/pages/standby"]'
-    ) || panic("Could not find the standby iframe")
+    document.querySelector<WebpackIFrameElement>('iframe[src*="/n/pages/standby"]') ||
+    panic("Could not find the standby iframe")
   )
 }
 
@@ -19,8 +18,7 @@ interface WebpackRequireFeatures {
   c?: unknown
   m: Record<number, unknown>
 }
-type WebpackRequire = (<R = unknown>(id: string | number) => R) &
-  WebpackRequireFeatures
+type WebpackRequire = (<R = unknown>(id: string | number) => R) & WebpackRequireFeatures
 
 function getFrameWebpackRequire(): WebpackRequire {
   const frame = getFrame()
@@ -100,8 +98,7 @@ interface IModule {
 
 function getExports(mod: IModule, recursionLimit = 5) {
   if (!mod) return
-  else if (mod?.exports && recursionLimit >= 0)
-    return getExports(mod.exports, recursionLimit - 1)
+  else if (mod?.exports && recursionLimit >= 0) return getExports(mod.exports, recursionLimit - 1)
   else if (mod.A) return mod.A
   else if (mod.Z) return mod.Z
   else if (mod.ZP) return mod.ZP
@@ -109,11 +106,7 @@ function getExports(mod: IModule, recursionLimit = 5) {
   else return mod
 }
 
-export function getModule(
-  member: string[],
-  getAll = false,
-  webpackRequire?: WebpackRequire
-) {
+export function getModule(member: string[], getAll = false, webpackRequire?: WebpackRequire) {
   if (!webpackRequire) webpackRequire = getFrameWebpackRequire()
   const modules = getAllModules(webpackRequire)
   const moduleKeys = Object.keys(modules)

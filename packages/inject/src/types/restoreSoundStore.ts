@@ -14,11 +14,7 @@ export interface RestoreSoundStore extends Backbone.Events {
    * Store a "restoreToSound" value and optionally suppress the event.
    * Pass null to clear the stored value.
    */
-  set(
-    key: "restoreToSound",
-    value: string | null,
-    opts?: { silent?: boolean }
-  ): void
+  set(key: "restoreToSound", value: string | null, opts?: { silent?: boolean }): void
   /** Store a value for any key. */
   set(key: string, value: unknown, opts?: Record<string, unknown>): void
 }

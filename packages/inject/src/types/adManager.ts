@@ -6,7 +6,7 @@ import type { Sound } from "./sound.js"
  */
 export interface AdManager extends Backbone.Events {
   /** The current AdPodController instance, or null between ad breaks. */
-  adPodController: unknown | null
+  adPodController: unknown
   /** Begin an ad break with the given ad sound. */
   beginAdBreak(sound: Sound, opts?: Record<string, unknown>): void
   /** Request that the current ad be skipped. */
@@ -28,7 +28,7 @@ export interface AdManager extends Backbone.Events {
   /** Returns the current AdController, or null. Internal use. */
   getCurrentAdController(): unknown
   /** Returns the current AudioAd model, or null. */
-  getCurrentAd(): unknown | null
+  getCurrentAd(): unknown
   /** Returns the Sound instance for the current ad audio, or null. */
   getCurrentAdSound(): Sound | null
   /** Returns the current ad visual controller, or null. Internal use. */
@@ -40,7 +40,7 @@ export interface AdManager extends Backbone.Events {
   /** Returns the total number of ads in the current pod. */
   getAdBreakSize(): number
   /** Returns the DSA config for the current ad, or null. */
-  getDsaConfig(): unknown | null
+  getDsaConfig(): unknown
   /** Returns the advertiser name for the current ad, or null. */
   getCurrentAdAdvertiser(): string | null
 }

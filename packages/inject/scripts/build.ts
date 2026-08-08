@@ -47,9 +47,7 @@ const SVGComponentPlugin: Bun.BunPlugin = {
           .split(/[/\\]/)
           .pop()
           ?.replace(/\.svg$/, "") ?? "SvgComponent"
-      const componentName = name.replace(/(^|_)([a-z])/g, (_, __, c) =>
-        c.toUpperCase()
-      )
+      const componentName = name.replace(/(^|_)([a-z])/g, (_, __, c) => c.toUpperCase())
       const contents = transform.sync(
         svg,
         {

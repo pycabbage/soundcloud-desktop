@@ -1,8 +1,10 @@
 import { createContext } from "react"
 import { createRoot } from "react-dom/client"
+
 import { useThemeStore } from "../lib/theme"
 import { panic } from "../lib/utils"
 import { Titlebar } from "./Titlebar"
+
 import toolbar from "./toolbar.css"
 
 export const ShadowRootContext = createContext<ShadowRoot | null>(null)

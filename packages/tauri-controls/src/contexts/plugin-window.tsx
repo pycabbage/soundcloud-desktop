@@ -18,9 +18,7 @@ interface TauriAppWindowProviderProps {
   children: React.ReactNode
 }
 
-export function TauriAppWindowProvider({
-  children,
-}: TauriAppWindowProviderProps) {
+export function TauriAppWindowProvider({ children }: TauriAppWindowProviderProps) {
   useEffect(() => {
     let unlisten: (() => void) | undefined
 
@@ -37,7 +35,7 @@ export function TauriAppWindowProvider({
       }
     }
 
-    init()
+    void init()
 
     return () => {
       unlisten?.()

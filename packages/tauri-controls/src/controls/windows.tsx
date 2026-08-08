@@ -1,4 +1,5 @@
 import type { HTMLProps } from "react"
+
 import { Button } from "../components/button"
 import { Icons } from "../components/icons"
 import { appWindow, useWindowStore } from "../contexts/plugin-window"
@@ -11,7 +12,7 @@ export function Windows({ className, ...props }: HTMLProps<HTMLDivElement>) {
     <div className={cn("h-[32px]", className)} {...props}>
       <Button
         onClick={() => appWindow.minimize()}
-        className="h-full w-[46px] cursor-default rounded-none bg-transparent text-black/90 hover:bg-black/5 active:bg-black/3  dark:text-white dark:hover:bg-white/6 dark:active:bg-white/4"
+        className="h-full w-[46px] cursor-default rounded-none bg-transparent text-black/90 hover:bg-black/5 active:bg-black/3 dark:text-white dark:hover:bg-white/6 dark:active:bg-white/4"
       >
         <Icons.minimizeWin />
       </Button>
@@ -22,11 +23,7 @@ export function Windows({ className, ...props }: HTMLProps<HTMLDivElement>) {
           "text-black/90 hover:bg-black/5 active:bg-black/3 dark:text-white dark:hover:bg-white/6 dark:active:bg-white/4"
         )}
       >
-        {!isWindowMaximized ? (
-          <Icons.maximizeWin />
-        ) : (
-          <Icons.maximizeRestoreWin />
-        )}
+        {!isWindowMaximized ? <Icons.maximizeWin /> : <Icons.maximizeRestoreWin />}
       </Button>
       <Button
         onClick={() => appWindow.close()}

@@ -21,11 +21,11 @@ bun install
 # Build — outputs IIFE bundle to dist/index.js
 bun run build
 
-# Lint (Biome)
+# Lint (oxlint + oxfmt --check, run concurrently)
 bun run lint
 
 # Auto-fix lint and formatting issues
-bunx biome check --write
+bun run lint:fix
 
 # Tests — no test suite exists yet; if added, use Bun's built-in runner
 bun test                                        # all tests
@@ -56,7 +56,8 @@ packages/inject/
 ├── scripts/
 │   └── build.ts              # Bun.build() config (format: "iife", target: "browser")
 ├── dist/                     # Built bundle (committed; loaded by Tauri at runtime)
-├── biome.json                # Linter / formatter config
+├── .oxlintrc.json            # Linter config (oxlint)
+├── .oxfmtrc.json             # Formatter config (oxfmt)
 └── tsconfig.json             # TypeScript config
 ```
 
@@ -64,19 +65,22 @@ packages/inject/
 
 ## TypeScript Code Style
 
-### Formatter (Biome)
+### Linter/Formatter (oxlint + oxfmt)
 
-Configured in `biome.json`:
+Lint config in `.oxlintrc.json`, format config in `.oxfmtrc.json`:
 
-| Setting | Value |
-|---|---|
-| Indentation | 2 spaces |
-| Quotes | Double (`"`) |
-| Semicolons | Omit unless required (`"asNeeded"`) |
-| Trailing commas | ES5 (objects and arrays; not function params) |
-| Import organization | Auto via Biome assist (`organizeImports: "on"`) |
+| Setting             | Value                                                                                                              |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Indentation         | 2 spaces                                                                                                           |
+| Quotes              | Double (`"`)                                                                                                       |
+| Semicolons          | Omit unless required (`"semi": false`)                                                                             |
+| Trailing commas     | ES5 (`"trailingComma": "es5"`)                                                                                     |
+| Import organization | Auto-sorted (`"sortImports": true`)                                                                                |
+| Tailwind classes    | Auto-sorted (`"sortTailwindcss": true`)                                                                            |
+| Type-aware linting  | Enabled (`"typeAware": true`, `"typeCheck": true`) — catches issues like unhandled promises that require type info |
 
-Run `bunx biome check --write` to auto-format and fix lint issues.
+Run `bun run lint:fix` to auto-format and fix lint issues (`concurrently "oxfmt" "oxlint --fix"`).
+Ignored paths (e.g. `dist`) live under `ignorePatterns` in `.oxlintrc.json` / `.oxfmtrc.json`.
 
 ### Imports
 
@@ -93,30 +97,31 @@ import type { Sound } from "../types/sound"
 ```
 
 Rules:
+
 - **Always** `import type` for type-only imports — `verbatimModuleSyntax: true` enforces this at compile time
 - No path aliases (`@/` etc.) — use relative paths only
-- Biome auto-organizes import order when running `--write`
+- oxfmt auto-organizes import order via `"sortImports": true` — `--write` is its default mode
 
 ### TypeScript Configuration
 
 Key constraints from `tsconfig.json` to keep in mind:
 
-| Option | Effect |
-|---|---|
-| `strict: true` | All strict checks enabled |
-| `verbatimModuleSyntax: true` | Type-only imports **must** use `import type` |
+| Option                           | Effect                                                           |
+| -------------------------------- | ---------------------------------------------------------------- |
+| `strict: true`                   | All strict checks enabled                                        |
+| `verbatimModuleSyntax: true`     | Type-only imports **must** use `import type`                     |
 | `noUncheckedIndexedAccess: true` | Array/object indexing returns `T \| undefined`; guard before use |
-| `noImplicitOverride: true` | `override` keyword required in subclasses |
-| `moduleResolution: "bundler"` | Bun bundler resolution; use `.ts` in local imports |
+| `noImplicitOverride: true`       | `override` keyword required in subclasses                        |
+| `moduleResolution: "bundler"`    | Bun bundler resolution; use `.ts` in local imports               |
 
 ### Naming Conventions
 
-| Construct | Convention | Example |
-|---|---|---|
-| Functions | `camelCase` | `getPlayManager`, `getModule`, `throttle` |
-| Variables | `camelCase` | `playManager`, `requestId`, `webpackRequire` |
+| Construct          | Convention   | Example                                       |
+| ------------------ | ------------ | --------------------------------------------- |
+| Functions          | `camelCase`  | `getPlayManager`, `getModule`, `throttle`     |
+| Variables          | `camelCase`  | `playManager`, `requestId`, `webpackRequire`  |
 | Interfaces / Types | `PascalCase` | `PlayManager`, `QueueItem`, `ContextSnapshot` |
-| Source files | `camelCase` | `playManager.ts`, `v2BridgePlayer.ts` |
+| Source files       | `camelCase`  | `playManager.ts`, `v2BridgePlayer.ts`         |
 
 ### Error Handling
 
@@ -133,16 +138,29 @@ const playManager =
 `panic()` throws and returns `never`, so TypeScript narrows the result type automatically.
 For optional/recoverable failures, prefer early returns or `undefined` checks.
 
-### Biome Lint Suppression
+### oxlint Suppression
 
-Suppress only when unavoidable. Always include a reason:
+Suppress only when unavoidable. Always include a reason after `--`:
 
 ```typescript
-// biome-ignore lint/suspicious/noExplicitAny: SoundCloud internal webpack API
+// oxlint-disable-next-line typescript/no-explicit-any -- SoundCloud internal webpack API
 const modules: any = webpackRequire.c
 
-// biome-ignore lint/style/noNonNullAssertion: webpackRequire must be assigned by push callback
-if (!webpackRequire!) { panic("Could not get webpack require") }
+// oxlint-disable-next-line typescript/no-non-null-assertion -- webpackRequire must be assigned by push callback
+if (!webpackRequire!) {
+  panic("Could not get webpack require")
+}
+```
+
+For promises that are intentionally not awaited (event listener registration, fire-and-forget
+init calls), prefer the `void` operator over a suppression comment — this is what the
+`no-floating-promises` rule itself recommends, and it doesn't require a top-level `await`
+(which the `format: "iife"` bundle output cannot support — see Workflow Notes):
+
+```typescript
+void listen("play-pause", () => {
+  playManager.toggleCurrent()
+})
 ```
 
 ---

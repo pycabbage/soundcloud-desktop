@@ -1,4 +1,5 @@
 import { type } from "@tauri-apps/plugin-os"
+
 import { cn } from "./libs/utils"
 import type { WindowTitlebarProps } from "./types"
 import { WindowControls } from "./window-controls"
@@ -12,8 +13,7 @@ export function WindowTitlebar({
 }: WindowTitlebarProps) {
   const left =
     controlsOrder === "left" ||
-    (controlsOrder === "platform" &&
-      windowControlsProps?.platform === "macos") ||
+    (controlsOrder === "platform" && windowControlsProps?.platform === "macos") ||
     (controlsOrder === "system" && type() === "macos")
 
   const customProps = (ml: string) => {
@@ -33,10 +33,7 @@ export function WindowTitlebar({
 
   return (
     <div
-      className={cn(
-        "bg-background flex select-none flex-row overflow-hidden",
-        className
-      )}
+      className={cn("bg-background flex select-none flex-row overflow-hidden", className)}
       data-tauri-drag-region
       {...props}
     >

@@ -12,6 +12,7 @@
  */
 
 import type Backbone from "backbone"
+
 import type { AudioReporterEvent } from "./audioReporterEvent.js"
 import type { QueueMetadata } from "./queueMetadata.js"
 import type { SoundAPlayer } from "./soundAPlayer.js"
@@ -41,11 +42,7 @@ export interface Sound extends Backbone.Model<SoundAttributes> {
     callback: SoundEventMap[K],
     context?: unknown
   ): this
-  on(
-    eventName: string,
-    callback: (...args: unknown[]) => void,
-    context?: unknown
-  ): this
+  on(eventName: string, callback: (...args: unknown[]) => void, context?: unknown): this
   on(eventMap: Backbone.EventMap, context?: unknown): this
 
   off<K extends keyof SoundEventMap>(
@@ -53,17 +50,10 @@ export interface Sound extends Backbone.Model<SoundAttributes> {
     callback?: SoundEventMap[K],
     context?: unknown
   ): this
-  off(
-    eventName?: string,
-    callback?: (...args: unknown[]) => void,
-    context?: unknown
-  ): this
+  off(eventName?: string, callback?: (...args: unknown[]) => void, context?: unknown): this
   off(eventMap: Backbone.EventMap, context?: unknown): this
 
-  trigger<K extends keyof SoundEventMap>(
-    eventName: K,
-    ...args: Parameters<SoundEventMap[K]>
-  ): this
+  trigger<K extends keyof SoundEventMap>(eventName: K, ...args: Parameters<SoundEventMap[K]>): this
   trigger(eventName: string, ...args: unknown[]): this
 
   once<K extends keyof SoundEventMap>(
@@ -71,11 +61,7 @@ export interface Sound extends Backbone.Model<SoundAttributes> {
     callback: SoundEventMap[K],
     context?: unknown
   ): this
-  once(
-    eventName: string,
-    callback: (...args: unknown[]) => void,
-    context?: unknown
-  ): this
+  once(eventName: string, callback: (...args: unknown[]) => void, context?: unknown): this
   once(eventMap: Backbone.EventMap, context?: unknown): this
 
   listenTo<K extends keyof SoundEventMap>(
@@ -83,11 +69,7 @@ export interface Sound extends Backbone.Model<SoundAttributes> {
     eventName: K,
     callback: SoundEventMap[K]
   ): this
-  listenTo(
-    obj: Backbone.Events,
-    eventName: string,
-    callback: (...args: unknown[]) => void
-  ): this
+  listenTo(obj: Backbone.Events, eventName: string, callback: (...args: unknown[]) => void): this
   listenTo(obj: Backbone.Events, eventMap: Backbone.EventMap): this
 
   stopListening(

@@ -31,11 +31,7 @@ export interface V2Bridge {
    * @param openInNewTab — open in a new browser tab.
    * @param hard — perform a hard (full-page) navigation.
    */
-  navigateInV2(
-    href: string,
-    openInNewTab?: boolean,
-    hard?: boolean
-  ): Promise<void>
+  navigateInV2(href: string, openInNewTab?: boolean, hard?: boolean): Promise<void>
 
   /**
    * Signal that the Webi embed is ready.

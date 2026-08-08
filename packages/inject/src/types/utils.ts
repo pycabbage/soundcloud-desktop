@@ -32,7 +32,7 @@ export type SoundState = "processing" | "failed" | "finished" | "unknown"
 export type SoundSharing = "public" | "private"
 
 /** Track access type for follower-exclusive content. */
-export type TrackShareAccess = "PRIVATE_FOLLOWS" | string
+export type TrackShareAccess = "PRIVATE_FOLLOWS" | (string & {})
 
 // ---------------------------------------------------------------------------
 // Track — DisabledReason
