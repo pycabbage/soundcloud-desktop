@@ -19,7 +19,7 @@ pub fn setup(
     let menu = Menu::with_items(
         app,
         &[
-            &MenuItem::with_id(app, "title", "SoundCloud Desktop", false, None::<&str>)?,
+            &MenuItem::with_id(app, "title", if cfg!(debug_assertions) { "SoundCloud Desktop [Dev]" } else { "SoundCloud Desktop" }, false, None::<&str>)?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "play_pause", "Play/Pause", true, None::<&str>)?,
             &MenuItem::with_id(app, "next", "Next", true, None::<&str>)?,
@@ -110,13 +110,26 @@ pub fn on_window_event(window: &tauri::Window, event: &tauri::WindowEvent) {
 
 pub fn update_tray_tooltip(app: &tauri::AppHandle, title: &str, artist: &str) {
     if let Some(tray) = app.tray_by_id("main") {
-        let tooltip = format!("Soundcloud Desktop: {} - {}", title, artist);
+        let tooltip = format!(
+            "{}: {} - {}",
+            if cfg!(debug_assertions) {
+                "Soundcloud Desktop [Dev]"
+            } else {
+                "Soundcloud Desktop"
+            },
+            title,
+            artist
+        );
         let _ = tray.set_tooltip(Some(&tooltip));
     }
 }
 
 pub fn reset_tray_tooltip(app: &tauri::AppHandle) {
     if let Some(tray) = app.tray_by_id("main") {
-        let _ = tray.set_tooltip(Some("Soundcloud Desktop"));
+        let _ = tray.set_tooltip(Some(if cfg!(debug_assertions) {
+            "Soundcloud Desktop [Dev]"
+        } else {
+            "Soundcloud Desktop"
+        }));
     }
 }
