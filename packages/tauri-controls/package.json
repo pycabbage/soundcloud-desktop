@@ -28,7 +28,7 @@
     "lint:fix": "concurrently \"oxfmt\" \"oxlint --fix\""
   },
   "dependencies": {
-    "zustand": "^5.0.12"
+    "zustand": "^5.0.14"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.2.2",
