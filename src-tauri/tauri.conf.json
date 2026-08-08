@@ -40,7 +40,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": ["nsis"],
+    "targets": ["nsis", "deb", "appimage", "rpm"],
     "createUpdaterArtifacts": true,
     "homepage": "https://github.com/pycabbage/soundcloud-desktop",
     "category": "Music",

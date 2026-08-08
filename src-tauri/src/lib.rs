@@ -2,7 +2,6 @@ mod commands;
 mod discord;
 mod models;
 mod tray;
-mod updater;
 mod window;
 
 use std::sync::atomic::AtomicBool;
@@ -14,9 +13,9 @@ use tauri_plugin_store::StoreExt;
 use tracing::{info, warn};
 
 use commands::{
-    check_for_updates, event_change_current_sound, event_playback_state_changed, event_seeked,
-    get_settings, post_init, save_autostart, save_discord_enabled, save_repeat_mode,
-    save_shuffle_state, save_start_minimized,
+    event_change_current_sound, event_playback_state_changed, event_seeked, get_settings,
+    post_init, save_autostart, save_discord_enabled, save_repeat_mode, save_shuffle_state,
+    save_start_minimized,
 };
 use discord::{CurrentSoundState, DiscordState, PauseTimeoutHandle, DISCORD_APP_ID};
 use models::AppSettings;
@@ -78,7 +77,6 @@ pub fn run() {
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
-        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_window_state::Builder::new().build())
         .plugin(tauri_plugin_single_instance::init(|_, _, _| {}))
@@ -114,14 +112,6 @@ pub fn run() {
             app.manage(CurrentSoundState(std::sync::Mutex::new(None)));
             app.manage(PauseTimeoutHandle(std::sync::Mutex::new(None)));
 
-            {
-                let app_handle = app.handle().clone();
-                tauri::async_runtime::spawn(async move {
-                    tokio::time::sleep(std::time::Duration::from_secs(10)).await;
-                    updater::handle_check_updates(app_handle, false).await;
-                });
-            }
-
             tray::setup(app, settings.start_minimized)?;
 
             #[cfg(all(desktop, not(debug_assertions)))]
@@ -151,7 +141,6 @@ pub fn run() {
         .on_tray_icon_event(tray::on_tray_icon_event)
         .on_window_event(tray::on_window_event)
         .invoke_handler(tauri::generate_handler![
-            check_for_updates,
             event_change_current_sound,
             event_playback_state_changed,
             event_seeked,

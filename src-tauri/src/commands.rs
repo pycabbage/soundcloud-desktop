@@ -219,9 +219,3 @@ pub async fn save_autostart(app: tauri::AppHandle, autostart: bool) -> Result<()
 
     Ok(())
 }
-
-#[tauri::command]
-pub async fn check_for_updates(app: tauri::AppHandle) -> Result<(), String> {
-    crate::updater::handle_check_updates(app, true).await;
-    Ok(())
-}
