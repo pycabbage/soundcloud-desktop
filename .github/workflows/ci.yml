@@ -16,7 +16,7 @@ jobs:
     name: Check (Rust)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: actions/cache@v5
         with:
           path: |
@@ -57,7 +57,7 @@ jobs:
     name: Check (TypeScript)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - run: bun install --frozen-lockfile
       - name: Run typecheck
@@ -80,7 +80,7 @@ jobs:
     needs: [check_rust, check_ts]
     if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: oven-sh/setup-bun@v2
       - name: Prepare JS bundle
