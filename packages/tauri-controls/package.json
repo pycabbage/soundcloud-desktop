@@ -39,7 +39,7 @@
     "@types/react-dom": "^19.2.3",
     "clsx": "^2.0.0",
     "concurrently": "^10.0.4",
-    "oxfmt": "^0.62.0",
+    "oxfmt": "^0.63.0",
     "oxlint": "^1.77.0",
     "oxlint-tsgolint": "^7.0.2001",
     "postcss": "^8.4.38",
