@@ -5,6 +5,7 @@ emoji: 🤖
 on:
   pull_request:
     types: [opened, synchronize]
+  bots: ["dependabot[bot]"]
 if: github.actor == 'dependabot[bot]'
 permissions:
   contents: read
