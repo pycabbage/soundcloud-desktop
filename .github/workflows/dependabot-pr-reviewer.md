@@ -10,6 +10,7 @@ if: github.actor == 'dependabot[bot]'
 permissions:
   contents: read
   pull-requests: read
+  copilot-requests: write
 strict: true
 network:
   allowed:
