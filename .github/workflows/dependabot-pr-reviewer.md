@@ -39,12 +39,46 @@ safe-outputs:
     protected-files: allowed
     if-no-changes: ignore
     commit-title-suffix: " [skip ci]"
-  merge-pull-request:
-    target: triggering
-    allowed-branches: ["dependabot/**"]
   add-comment:
     target: triggering
     max: 1
+  jobs:
+    merge-dependabot-pr:
+      description: >-
+        Merge a Dependabot pull request that has been reviewed and has no
+        outstanding issues. Only call this for the pull request under review
+        when it is safe (mergeable, no conflicts, opened by dependabot[bot]).
+      runs-on: ubuntu-latest
+      output: "Pull request merged."
+      permissions:
+        contents: write
+        pull-requests: write
+      inputs:
+        pull_request_number:
+          description: "The pull request number to merge"
+          required: true
+          type: number
+      steps:
+        - name: Verify and merge pull request
+          env:
+            GH_TOKEN: ${{ github.token }}
+            PR_NUMBER: ${{ inputs.pull_request_number }}
+            REPO: ${{ github.repository }}
+          run: |
+            set -euo pipefail
+            AUTHOR=$(gh pr view "$PR_NUMBER" -R "$REPO" --json author -q .author.login)
+            MERGEABLE=$(gh pr view "$PR_NUMBER" -R "$REPO" --json mergeable -q .mergeable)
+            STATE=$(gh pr view "$PR_NUMBER" -R "$REPO" --json mergeStateStatus -q .mergeStateStatus)
+            echo "author=$AUTHOR mergeable=$MERGEABLE mergeStateStatus=$STATE"
+            if [ "$AUTHOR" != "dependabot[bot]" ]; then
+              echo "::error::Refusing to merge: PR #$PR_NUMBER was not opened by dependabot[bot] (author: $AUTHOR)"
+              exit 1
+            fi
+            if [ "$MERGEABLE" != "MERGEABLE" ]; then
+              echo "::error::Refusing to merge: PR #$PR_NUMBER is not mergeable (mergeable=$MERGEABLE)"
+              exit 1
+            fi
+            gh pr merge "$PR_NUMBER" -R "$REPO" --squash --delete-branch
 ---
 
 # Dependabot PR Reviewer
@@ -99,8 +133,11 @@ documented there.
     the fix briefly in the commit/PR context.
   - If verification fails or the fix isn't straightforward, do not merge; add
     a comment explaining the problem instead so a human can look at it.
-- **No issues found**: the PR is safe to merge. Call `merge-pull-request` to
-  merge it.
+- **No issues found**: the PR is safe to merge. Call the `merge-dependabot-pr`
+  safe-job with the current PR's number to merge it. (The built-in
+  `merge-pull-request` safe output cannot be used here because it always
+  refuses merges into the repository's default branch, which is the target
+  of every Dependabot PR in this repo.)
 - **Issue found but not easily/safely auto-fixable** (e.g. a major version
   bump with real breaking changes, or a fix that fails verification): do not
   merge or push anything. Post a clear `add-comment` describing the concern
