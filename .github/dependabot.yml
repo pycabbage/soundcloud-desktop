@@ -4,6 +4,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # gh-aw-actions/setup is pinned inside auto-generated *.lock.yml files
+      # (produced by `gh aw compile`). Dependabot can only patch the pinned
+      # SHA/version reference in place, which desyncs the rest of the
+      # generated file from that action version and breaks the workflow
+      # (e.g. missing helper scripts). Upgrade via `gh aw compile` after
+      # bumping the gh-aw CLI instead.
+      - dependency-name: "github/gh-aw-actions/setup"
   - package-ecosystem: "cargo"
     directory: "/src-tauri"
     schedule:
