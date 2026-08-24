@@ -196,6 +196,14 @@ let Some((attrs, pos, was_playing)) = result else {
 - Before starting on frontend tasks, always run the `agent-browser --auto-connect ...` command on the subagent to check the status.
 - Before working on unfamiliar areas of the Soundcloud internal API, always investigate [packages/vendor](packages/vendor) to understand the situation.
 
+### Browser debugging via agent-browser (CDP)
+
+- `cargo tauri dev` may be run freely; no user approval is needed.
+- In dev builds, the WebView listens for CDP on port 9223 automatically
+  (`src-tauri\src\lib.rs:171`). Explore, operate, and debug freely with
+  agent-browser commands such as `agent-browser --cdp 9223 snapshot`.
+  See the /agent-browser skill for details.
+
 ---
 
 ## Design Principles

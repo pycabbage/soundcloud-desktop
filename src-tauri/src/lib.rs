@@ -168,7 +168,7 @@ pub fn run() {
     #[cfg(debug_assertions)]
     std::env::set_var(
         "WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
-        "--remote-debugging-port=9222",
+        "--remote-debugging-port=9223",
     );
 
     builder
