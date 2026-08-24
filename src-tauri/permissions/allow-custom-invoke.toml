@@ -1,0 +1,15 @@
+[[set]]
+identifier = "allow-custom-invoke"
+description = "Allow all custom invoke"
+permissions = [
+  "allow-save-start-minimized",
+  "allow-get-settings",
+  "allow-save-discord-enabled",
+  "allow-save-repeat-mode",
+  "allow-event-playback-state-changed",
+  "allow-save-shuffle-state",
+  "allow-event-seeked",
+  "allow-post-init",
+  "allow-save-autostart",
+  "allow-event-change-current-sound"
+]
