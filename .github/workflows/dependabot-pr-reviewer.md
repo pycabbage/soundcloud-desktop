@@ -84,7 +84,7 @@ safe-outputs:
               echo "::error::Refusing to merge: PR #$PR_NUMBER is not mergeable (mergeable=$MERGEABLE)"
               exit 1
             fi
-            gh pr merge "$PR_NUMBER" -R "$REPO" --squash --delete-branch
+            gh pr merge "$PR_NUMBER" -R "$REPO" --merge --delete-branch
 ---
 
 # Dependabot PR Reviewer
