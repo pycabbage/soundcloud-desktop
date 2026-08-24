@@ -29,7 +29,7 @@
     "@types/react-dom": "^19.2.4",
     "concurrently": "^10.0.4",
     "oxfmt": "^0.64.0",
-    "oxlint": "^1.77.0",
+    "oxlint": "^1.79.0",
     "oxlint-tsgolint": "^7.0.2001",
     "postcss-load-config": "^6.0.1",
     "sass": "^1.102.0"
