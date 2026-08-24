@@ -6,6 +6,12 @@
       "sourceType": "github",
       "skillPath": "skills/agent-browser/SKILL.md",
       "computedHash": "a674b7d81066e3cc471a7512ddb4ae724418cbfefa75cbb050b0dc430e4d57a0"
+    },
+    "sanitize-artifacts": {
+      "source": "kotek-7/dotfiles",
+      "sourceType": "github",
+      "skillPath": "dot_agents/skills/sanitize-artifacts/SKILL.md",
+      "computedHash": "55d5741147751598fdc0f472bae3aa019cf56df01599ef5ec6e5fc2794ea4076"
     }
   }
 }
