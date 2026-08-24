@@ -94,7 +94,18 @@ safe-outputs:
               echo "::error::Refusing to merge: PR #$PR_NUMBER is not mergeable (mergeable=$MERGEABLE)"
               exit 1
             fi
-            gh pr merge "$PR_NUMBER" -R "$REPO" --merge --delete-branch
+            # Concurrent merges of other PRs can advance the base branch
+            # between our checks and the merge call ("Base branch was
+            # modified"). Retry the merge itself a few times too.
+            for i in 1 2 3 4 5; do
+              if gh pr merge "$PR_NUMBER" -R "$REPO" --merge --delete-branch; then
+                exit 0
+              fi
+              echo "merge attempt $i failed, retrying in 5s..."
+              sleep 5
+            done
+            echo "::error::Failed to merge PR #$PR_NUMBER after retries"
+            exit 1
 ---
 
 # Dependabot PR Reviewer
