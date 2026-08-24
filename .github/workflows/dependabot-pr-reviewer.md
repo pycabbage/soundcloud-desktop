@@ -74,7 +74,9 @@ safe-outputs:
             MERGEABLE=$(gh pr view "$PR_NUMBER" -R "$REPO" --json mergeable -q .mergeable)
             STATE=$(gh pr view "$PR_NUMBER" -R "$REPO" --json mergeStateStatus -q .mergeStateStatus)
             echo "author=$AUTHOR mergeable=$MERGEABLE mergeStateStatus=$STATE"
-            if [ "$AUTHOR" != "dependabot[bot]" ]; then
+            # gh CLI reports bot authors as "app/dependabot"; the GraphQL/REST API
+            # elsewhere reports the same account as "dependabot[bot]" -- accept both.
+            if [ "$AUTHOR" != "dependabot[bot]" ] && [ "$AUTHOR" != "app/dependabot" ]; then
               echo "::error::Refusing to merge: PR #$PR_NUMBER was not opened by dependabot[bot] (author: $AUTHOR)"
               exit 1
             fi
