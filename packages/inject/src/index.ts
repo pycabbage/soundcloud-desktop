@@ -103,6 +103,15 @@ async function init() {
   sheet.replaceSync(injectStyles)
   document.adoptedStyleSheets.push(sheet)
 
+  // Make the V2 layout iframe transparent so the acrylic window shows through
+  const v2Frame = document.querySelector<HTMLIFrameElement>("iframe.webiIframe.webiIframeV2Layout")
+  if (v2Frame?.contentDocument?.defaultView) {
+    const frameSheet = new v2Frame.contentDocument.defaultView.CSSStyleSheet()
+    frameSheet.replaceSync("body{background-color:transparent}")
+    v2Frame.contentDocument.adoptedStyleSheets.push(frameSheet)
+    v2Frame.style.backgroundColor = "transparent"
+  }
+
   playManager.on("state:shuffle", async (value: boolean) => {
     await invoke("save_shuffle_state", { shuffle: value })
   })

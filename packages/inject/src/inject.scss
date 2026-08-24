@@ -2,10 +2,7 @@
   --titlebar-height: 32px;
 }
 
-html {
-  overflow: hidden;
-}
-
+html,
 body {
   overflow: hidden;
 }
@@ -18,6 +15,12 @@ body {
   right: 0;
   overflow-y: auto;
   padding-bottom: 3rem;
+}
+
+/* Offset the V2 layout track iframe by the titlebar height */
+iframe.webiIframe.webiIframeV2Layout {
+  margin-top: calc(46px + var(--titlebar-height));
+  height: calc(100vh - 46px - 48px - var(--titlebar-height));
 }
 
 body.theme-dark {
