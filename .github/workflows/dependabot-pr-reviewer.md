@@ -71,15 +71,25 @@ safe-outputs:
               exit 1
             fi
             AUTHOR=$(gh pr view "$PR_NUMBER" -R "$REPO" --json author -q .author.login)
-            MERGEABLE=$(gh pr view "$PR_NUMBER" -R "$REPO" --json mergeable -q .mergeable)
-            STATE=$(gh pr view "$PR_NUMBER" -R "$REPO" --json mergeStateStatus -q .mergeStateStatus)
-            echo "author=$AUTHOR mergeable=$MERGEABLE mergeStateStatus=$STATE"
             # gh CLI reports bot authors as "app/dependabot"; the GraphQL/REST API
             # elsewhere reports the same account as "dependabot[bot]" -- accept both.
             if [ "$AUTHOR" != "dependabot[bot]" ] && [ "$AUTHOR" != "app/dependabot" ]; then
               echo "::error::Refusing to merge: PR #$PR_NUMBER was not opened by dependabot[bot] (author: $AUTHOR)"
               exit 1
             fi
+            # GitHub computes mergeability asynchronously; right after a push it can
+            # briefly report "UNKNOWN" before settling to MERGEABLE/CONFLICTING.
+            # Poll a few times before giving up.
+            MERGEABLE="UNKNOWN"
+            for i in 1 2 3 4 5 6; do
+              MERGEABLE=$(gh pr view "$PR_NUMBER" -R "$REPO" --json mergeable -q .mergeable)
+              STATE=$(gh pr view "$PR_NUMBER" -R "$REPO" --json mergeStateStatus -q .mergeStateStatus)
+              echo "attempt $i: author=$AUTHOR mergeable=$MERGEABLE mergeStateStatus=$STATE"
+              if [ "$MERGEABLE" != "UNKNOWN" ]; then
+                break
+              fi
+              sleep 5
+            done
             if [ "$MERGEABLE" != "MERGEABLE" ]; then
               echo "::error::Refusing to merge: PR #$PR_NUMBER is not mergeable (mergeable=$MERGEABLE)"
               exit 1
