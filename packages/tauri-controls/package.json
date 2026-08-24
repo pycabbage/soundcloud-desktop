@@ -28,7 +28,7 @@
     "lint:fix": "concurrently \"oxfmt\" \"oxlint --fix\""
   },
   "dependencies": {
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",
@@ -38,7 +38,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "clsx": "^2.0.0",
-    "concurrently": "^10.0.4",
+    "concurrently": "^10.0.5",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.79.0",
     "oxlint-tsgolint": "^7.0.2001",

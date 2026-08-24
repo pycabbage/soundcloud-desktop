@@ -18,7 +18,7 @@
     "react-dom": "^19.2.8",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
-    "zustand": "^5.0.14"
+    "zustand": "^5.0.15"
   },
   "devDependencies": {
     "@svgr/core": "^8.1.0",
@@ -27,7 +27,7 @@
     "@types/backbone": "^1.4.23",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
-    "concurrently": "^10.0.4",
+    "concurrently": "^10.0.5",
     "oxfmt": "^0.64.0",
     "oxlint": "^1.79.0",
     "oxlint-tsgolint": "^7.0.2001",
