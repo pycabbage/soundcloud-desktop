@@ -62,10 +62,14 @@ safe-outputs:
         - name: Verify and merge pull request
           env:
             GH_TOKEN: ${{ github.token }}
-            PR_NUMBER: ${{ inputs.pull_request_number }}
             REPO: ${{ github.repository }}
           run: |
             set -euo pipefail
+            PR_NUMBER=$(jq -r '.items[] | select(.type == "merge_dependabot_pr") | .pull_request_number' "$GH_AW_AGENT_OUTPUT" | head -n1)
+            if [ -z "$PR_NUMBER" ] || [ "$PR_NUMBER" = "null" ]; then
+              echo "::error::No pull_request_number found in agent output"
+              exit 1
+            fi
             AUTHOR=$(gh pr view "$PR_NUMBER" -R "$REPO" --json author -q .author.login)
             MERGEABLE=$(gh pr view "$PR_NUMBER" -R "$REPO" --json mergeable -q .mergeable)
             STATE=$(gh pr view "$PR_NUMBER" -R "$REPO" --json mergeStateStatus -q .mergeStateStatus)
