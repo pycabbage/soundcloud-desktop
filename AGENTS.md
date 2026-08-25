@@ -165,6 +165,13 @@ Use `panic()` for unrecoverable errors; prefer early returns for expected failur
 const player = getPlayerModule() ?? panic("Could not find player module")
 ```
 
+### Other TypeScript Guidelines
+
+- DO NOT use `let` for ALL variables (even if it changes later)
+- DO NOT use `.then()` and `.catch()`
+- DO NOT use `let isExecuted = false` for one-time execution flags
+- DO NOT use `let objectsMightBeSetLater: SomeObject | null = null` for late initialization; Initialize it upon declaration.
+
 ---
 
 ## Rust Code Style
