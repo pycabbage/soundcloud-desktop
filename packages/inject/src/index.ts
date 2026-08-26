@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
 import { createStore } from "zustand/vanilla"
 
+import { installDropUrlHandler } from "./lib/dropHandler"
 import { getPlayManager } from "./lib/playManager"
 import { insertTitlebar } from "./toolbar"
 import type { Sound } from "./types/sound"
@@ -74,42 +75,41 @@ void listen("previous", () => {
 
 async function init() {
   insertTitlebar()
+  installDropUrlHandler()
 
   document.querySelector("div#app")?.addEventListener("scroll", () => {
     window.dispatchEvent(new Event("scroll"))
   })
 
-  if (playManager.hasCurrentSound()) {
-    const currentSound = playManager.getCurrentSound()!
-    soundStore.getState().updateSound(currentSound)
-    await invoke("event_change_current_sound", {
-      attributes: currentSound.attributes,
-    })
+  // Inject styles first so the layout is correct even if a later IPC await
+  // stalls during startup. The vendor app can reset adoptedStyleSheets or
+  // rebuild body content while booting, so re-apply until it sticks.
+  const injectStylesheet = (): void => {
+    const sheet = new CSSStyleSheet()
+    sheet.replaceSync(injectStyles)
+    document.adoptedStyleSheets.push(sheet)
+
+    const v2Frame = document.querySelector<HTMLIFrameElement>(
+      "iframe.webiIframe.webiIframeV2Layout"
+    )
+    if (v2Frame?.contentDocument?.defaultView) {
+      const frameSheet = new v2Frame.contentDocument.defaultView.CSSStyleSheet()
+      frameSheet.replaceSync("body{background-color:transparent}")
+      v2Frame.contentDocument.adoptedStyleSheets.push(frameSheet)
+      v2Frame.style.backgroundColor = "transparent"
+    }
   }
 
-  const prefs = await invoke<{ shuffle: boolean; repeat_mode: RepeatMode }>("post_init")
-  const currentShuffle = playManager.getState("shuffle")
-  const { repeatMode: currentRepeatMode } = playManager.getQueueState()
+  injectStylesheet()
 
-  if (currentShuffle !== prefs.shuffle) {
-    playManager.toggleShuffle()
-  }
-  if (currentRepeatMode !== prefs.repeat_mode) {
-    playManager.setRepeatMode(prefs.repeat_mode)
-  }
-
-  // Inject styles
-  const sheet = new CSSStyleSheet()
-  sheet.replaceSync(injectStyles)
-  document.adoptedStyleSheets.push(sheet)
-
-  // Make the V2 layout iframe transparent so the acrylic window shows through
-  const v2Frame = document.querySelector<HTMLIFrameElement>("iframe.webiIframe.webiIframeV2Layout")
-  if (v2Frame?.contentDocument?.defaultView) {
-    const frameSheet = new v2Frame.contentDocument.defaultView.CSSStyleSheet()
-    frameSheet.replaceSync("body{background-color:transparent}")
-    v2Frame.contentDocument.adoptedStyleSheets.push(frameSheet)
-    v2Frame.style.backgroundColor = "transparent"
+  // Re-apply if the vendor boot wipes our stylesheet (checked a few times).
+  for (const delay of [1000, 3000, 8000]) {
+    setTimeout(() => {
+      if (!document.adoptedStyleSheets.some((s) => s.cssRules.length > 0)) {
+        injectStylesheet()
+        console.debug("[sc-desktop] re-applied inject styles")
+      }
+    }, delay)
   }
 
   playManager.on("state:shuffle", async (value: boolean) => {
@@ -119,7 +119,31 @@ async function init() {
   playManager.on("change:repeatMode", async (mode: RepeatMode) => {
     await invoke("save_repeat_mode", { mode })
   })
-  console.debug("[sc-desktop] Init complete")
+
+  // IPC-dependent setup must never block the UI init above.
+  void (async () => {
+    if (playManager.hasCurrentSound()) {
+      const currentSound = playManager.getCurrentSound()!
+      soundStore.getState().updateSound(currentSound)
+      await invoke("event_change_current_sound", {
+        attributes: currentSound.attributes,
+      })
+    }
+
+    const prefs = await invoke<{ shuffle: boolean; repeat_mode: RepeatMode }>("post_init")
+    const currentShuffle = playManager.getState("shuffle")
+    const { repeatMode: currentRepeatMode } = playManager.getQueueState()
+
+    if (currentShuffle !== prefs.shuffle) {
+      playManager.toggleShuffle()
+    }
+    if (currentRepeatMode !== prefs.repeat_mode) {
+      playManager.setRepeatMode(prefs.repeat_mode)
+    }
+    console.debug("[sc-desktop] Init complete")
+  })().catch((err: unknown) => {
+    console.warn("[sc-desktop] init setup failed:", err)
+  })
 }
 
 void init()
