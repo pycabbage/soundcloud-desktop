@@ -23,8 +23,13 @@ Constraints that shaped the decision:
 - DOM-level listeners plus `MutationObserver` are banned by project guidelines
   (`AGENTS.md`: no MutationObserver under any circumstances; modify the webpack
   module instead of monitoring vendor processing).
-- wry's native drag-drop handling must remain untouched — it is what makes the
-  WebView receive the drop at all.
+- wry's default `dragDropEnabled: true` injects its own native OLE `IDropTarget`
+  handler on Windows (`RegisterDragDrop` over every child HWND +
+  `ICoreWebView2Controller4::SetAllowExternalDrop(false)`). That handler swallows
+  all OS drag events in Rust and they never reach the DOM, so the vendor's
+  HTML5/jQuery drop handlers never fire. HTML5 drag & drop on Windows therefore
+  requires `dragDropEnabled: false` (`disable_drag_drop_handler`), which restores
+  WebView2's own external-drop handling that forwards drag events into the page.
 
 ## Decision
 
@@ -74,6 +79,7 @@ Resolution path (`lib/dropUrl.ts`):
 **Project priorities honored**
 
 - 最小コード行数 (minimal LOC): the whole feature is ~40 lines across
-  `dropHandler.ts` + `dropUrl.ts`, with no Rust changes.
+  `dropHandler.ts` + `dropUrl.ts`. The Rust side only flips the webview config
+  (`dragDropEnabled: false`) so OS drag events reach the DOM at all.
 - パフォーマンス優先 (performance first): no polling after the binding is
   found, no DOM observation, O(1) work per drop event.

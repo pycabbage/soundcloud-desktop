@@ -50,6 +50,7 @@ pub fn create_main_window(
                 )
                 .window_features(features)
                 .title(url.as_str())
+                .disable_drag_drop_handler()
                 .on_document_title_changed(|window, title| {
                     let _ = window.set_title(&title);
                 })
