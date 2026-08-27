@@ -19,7 +19,17 @@ pub fn setup(
     let menu = Menu::with_items(
         app,
         &[
-            &MenuItem::with_id(app, "title", if cfg!(debug_assertions) { "SoundCloud Desktop [Dev]" } else { "SoundCloud Desktop" }, false, None::<&str>)?,
+            &MenuItem::with_id(
+                app,
+                "title",
+                if cfg!(debug_assertions) {
+                    "SoundCloud Desktop [Dev]"
+                } else {
+                    "SoundCloud Desktop"
+                },
+                false,
+                None::<&str>,
+            )?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "play_pause", "Play/Pause", true, None::<&str>)?,
             &MenuItem::with_id(app, "next", "Next", true, None::<&str>)?,

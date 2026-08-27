@@ -151,8 +151,8 @@ pub async fn save_discord_enabled(
     discord_enabled_state: State<'_, DiscordEnabled>,
     discord_state: State<'_, DiscordState>,
 ) -> Result<(), String> {
-    use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
     use crate::discord::DISCORD_APP_ID;
+    use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
     use tracing::warn;
 
     info!(enabled, "event: save_discord_enabled");

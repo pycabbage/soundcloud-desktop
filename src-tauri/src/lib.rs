@@ -1,3 +1,4 @@
+mod acrylic;
 mod commands;
 mod discord;
 mod models;

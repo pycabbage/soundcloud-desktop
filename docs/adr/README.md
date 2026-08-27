@@ -18,6 +18,7 @@ We use a Nyx-style lightweight format with four sections:
 | 0001 | [TS-only URL drop interception via vendor handler patch](0001-inject-url-drop-queue.md) | accepted |
 | 0002 | [Member-fingerprint webpack module lookup](0002-webpack-member-fingerprint.md) | accepted |
 | 0003 | [Vendor ThemeStore subscription over MutationObserver](0003-theme-vendor-store.md) | accepted |
+| 0004 | [Acrylic kept active while inactive via WM_NCACTIVATE interception](0004-acrylic-active-while-inactive.md) | accepted |
 
 ## Conventions
 
