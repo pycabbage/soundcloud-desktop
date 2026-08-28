@@ -1,0 +1,53 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["dist"],
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc",
+    "react",
+    "react-perf",
+    "jsdoc",
+    "jsx-a11y",
+    "import",
+    "promise",
+    "eslint",
+  ],
+  "jsPlugins": [
+    {
+      "name": "eslint-js",
+      "specifier": "oxlint-plugin-eslint",
+    },
+  ],
+  "options": {
+    "typeAware": true,
+    "typeCheck": true,
+  },
+  "categories": {
+    "correctness": "error",
+  },
+  "rules": {
+    "no-restricted-globals": [
+      "error",
+      {
+        "name": "MutationObserver",
+        "message": "MutationObserver is banned.",
+      },
+    ],
+    "eslint-js/no-restricted-syntax": [
+      "error",
+      {
+        "selector": "VariableDeclaration[kind='let']",
+        "message": "Use const.",
+      },
+      {
+        "selector": "MemberExpression[property.name='MutationObserver']",
+        "message": "MutationObserver is banned.",
+      },
+    ],
+    "typescript/consistent-type-definitions": ["error", "interface"],
+  },
+  "env": {
+    "builtin": true,
+  },
+}

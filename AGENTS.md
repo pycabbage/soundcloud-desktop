@@ -171,6 +171,10 @@ const player = getPlayerModule() ?? panic("Could not find player module")
 - DO NOT use `.then()` and `.catch()`
 - DO NOT use `let isExecuted = false` for one-time execution flags
 - DO NOT use `let objectsMightBeSetLater: SomeObject | null = null` for late initialization; Initialize it upon declaration.
+- DO NOT use `MutationObserver` (under no circumstances); Instead of monitoring processing performed by vendor code, you should modify the webpackModule.
+- DO NOT use absolute module IDs (e.g. `getWebpackRequire()(2847)`); Use `getModule()` with member fingerprints instead.
+- DO NOT use `type ...` for object types; Use `interface` instead.
+- DO NOT use `... as SomeType` for type assertions.
 
 ---
 
@@ -195,6 +199,15 @@ let Some((attrs, pos, was_playing)) = result else {
 1. After editing TypeScript: `cd packages/inject && bun run build`
 2. After editing Rust: `cargo check --lib` to verify compilation
 3. `cargo tauri dev` auto-builds inject via `beforeDevCommand`
+4. Run the `/sanitize-artifacts` skill to remove conversation-derived comments, and move remaining comment content into an ADR.
+
+After editing ADRs or other Markdown documents, run:
+
+```bash
+bunx markdownlint-cli2 "*.md" "docs/**/*.md" --fix
+```
+
+Fix any remaining lint errors reported by the command.
 
 ---
 

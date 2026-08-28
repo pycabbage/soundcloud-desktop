@@ -1,3 +1,6 @@
+//
+/* oxlint-disable typescript/consistent-type-assertions */
+
 import { panic } from "./utils"
 
 interface WebpackWindowProxy extends WindowProxy {
@@ -23,19 +26,19 @@ type WebpackRequire = (<R = unknown>(id: string | number) => R) & WebpackRequire
 function getFrameWebpackRequire(): WebpackRequire {
   const frame = getFrame()
   const id = `webpackModulesget_${Date.now()}`
-  let webpackRequire: WebpackRequire | null = null
+  const state: { webpackRequire: WebpackRequire | null } = { webpackRequire: null }
   frame.contentWindow?.webpackChunk_N_E.push([
     [Symbol(id)],
     {},
     (req: WebpackRequire) => {
-      webpackRequire = req
+      state.webpackRequire = req
     },
   ])
   frame.contentWindow?.webpackChunk_N_E.pop()
-  if (!webpackRequire) {
+  if (!state.webpackRequire) {
     panic("Could not get webpack require function")
   }
-  return webpackRequire
+  return state.webpackRequire
 }
 
 interface CustomArray<T> extends Omit<Array<T>, "push"> {
@@ -72,7 +75,7 @@ export function getWebpackRequire() {
   return webpackRequire as WebpackRequire
 }
 
-function getAllModules(webpackRequire?: WebpackRequire) {
+export function getAllModules(webpackRequire?: WebpackRequire) {
   if (!webpackRequire) webpackRequire = getFrameWebpackRequire()
   if (webpackRequire?.c) return webpackRequire.c
   const { m: modules } = webpackRequire
@@ -113,8 +116,10 @@ export function getModule(member: string[], getAll = false, webpackRequire?: Web
   const moduleKey = moduleKeys[getAll ? "filter" : "find"]((key) => {
     const mod = modules[key as keyof typeof modules] as IModule
     const exports = getExports(mod)
-    if (!exports || typeof exports !== "object") return false
-    return member.every((m) => m in exports)
+    // Function exports (e.g. classes with static members like Sound.resolve)
+    // are valid matches too, so accept any non-null export here.
+    if (!exports) return false
+    return member.every((m) => m in (exports as object))
   })
   return getAll
     ? (moduleKey as string[] | undefined)?.map((k) =>

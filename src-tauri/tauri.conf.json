@@ -31,7 +31,8 @@
         "transparent": true,
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
-        "url": "https://soundcloud.com/discover"
+        "url": "https://soundcloud.com/discover",
+        "dragDropEnabled": false
       }
     ],
     "security": {

@@ -6,6 +6,9 @@ use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 use tracing::{debug, error};
 
+#[cfg(windows)]
+use crate::acrylic;
+
 fn is_allowed_url(url: &str) -> bool {
     (url.starts_with("https://soundcloud.com")
         && !url.starts_with("https://soundcloud.com/company")
@@ -50,6 +53,7 @@ pub fn create_main_window(
                 )
                 .window_features(features)
                 .title(url.as_str())
+                .disable_drag_drop_handler()
                 .on_document_title_changed(|window, title| {
                     let _ = window.set_title(&title);
                 })
@@ -74,6 +78,9 @@ pub fn create_main_window(
             .color(Color(18, 18, 18, 200))
             .build(),
     )?;
+
+    #[cfg(windows)]
+    acrylic::install_keep_active_subclass(window.hwnd().map(|h| h.0 as isize).unwrap_or(0));
 
     window.on_window_event({
         let app_handle = app.handle().clone();
