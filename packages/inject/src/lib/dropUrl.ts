@@ -3,18 +3,6 @@ import { getPlayManager } from "./playManager"
 import { getSoundConstructor } from "./soundConstructor"
 import { getModule, getWebpackRequire } from "./webpack"
 
-/**
- * Resolves a dropped SoundCloud URL into queueable sounds, entirely
- * client-side using the page's own session and API client.
- *
- * - Track permalink:  https://soundcloud.com/{user}/{permalink}
- *   → Sound.resolve(user, permalink)
- * - Playlist:         https://soundcloud.com/{user}/sets/{permalink}
- *   → api-v2 /resolve (client_id from the web app config)
- * - Short link:       https://on.soundcloud.com/{token} (and any other
- *   SoundCloud URL) → oEmbed gives kind + id → api-v2 /tracks|/playlists/{id}
- */
-
 /** Parsed track permalink. */
 interface TrackPermalink {
   username: string
@@ -153,7 +141,6 @@ function enqueueSound(payload: Record<string, unknown>): void {
 export async function enqueueDroppedUrl(rawUrl: string): Promise<void> {
   const playManager = getPlayManager()
 
-  // Fast path: plain track permalink → internal resolver (cached instances).
   const permalink = parseTrackPermalink(rawUrl)
   if (permalink) {
     const SoundCtor = getSoundConstructor()
@@ -166,8 +153,6 @@ export async function enqueueDroppedUrl(rawUrl: string): Promise<void> {
     return
   }
 
-  // General path: short links, playlists, and any other SoundCloud URL go
-  // through oEmbed to identify the resource, then api-v2 for the payloads.
   const { kind, id } = await resolveResourceId(rawUrl)
 
   if (kind === "playlists") {

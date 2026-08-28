@@ -6,9 +6,9 @@
 //! on the main window taskbar thumbnail and keeps the two stateful ones
 //! (Like/Dislike and Play/Pause) in sync with the current playback state.
 //!
-//! The COM object and the button icons may only be touched from the thread that
-//! owns the window, so every mutation funnels through `AppHandle::run_on_main_thread`.
-//! Button state itself lives in a plain `Mutex` and can be written from any thread.
+//! The COM object and the icons are window-thread only, so every mutation
+//! funnels through `AppHandle::run_on_main_thread`; button state is a plain
+//! `Mutex` writable from any thread.
 
 use std::cell::{Cell, RefCell};
 use std::ffi::c_void;
@@ -152,8 +152,7 @@ unsafe extern "system" fn subclass_proc(
         on_button_clicked((wparam.0 & 0xFFFF) as u32);
         return LRESULT(0);
     } else if msg == WM_SETTINGCHANGE || msg == WM_DPICHANGED {
-        // The glyphs are drawn for a specific DPI and shell theme, both of
-        // which these messages announce.
+        // Both announce a change the glyphs were rasterised for.
         refresh_buttons();
     }
 
@@ -321,8 +320,7 @@ fn ensure_icons(hwnd: HWND) -> Option<IconSet> {
         {
             return None;
         }
-        // Glyphs read as the foreground of the thumbnail flyout, so they follow
-        // the shell theme rather than the in-app theme.
+        // Glyphs are the foreground of the flyout, so they follow the shell.
         let color = if light_theme {
             [0, 0, 0]
         } else {

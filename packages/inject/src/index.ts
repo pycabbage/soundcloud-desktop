@@ -83,8 +83,6 @@ playManager.on("change:currentSound", async (payload) => {
   }
 })
 
-// Covers likes toggled from SoundCloud's own buttons as well as ours, since
-// both end up mutating this collection.
 soundLikes.on("change", () => {
   void reportLikeState()
 })

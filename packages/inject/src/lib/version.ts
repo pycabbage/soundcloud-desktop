@@ -1,23 +1,17 @@
 import { panic } from "./utils"
 import { getModule, getWebpackRequire } from "./webpack"
 
-// ── SoundCloud App Version ────────────────────────────────────────────────
-// サーバーが HTML 内のインライン <script> で注入する window.__sc_version を読む。
-// 例: "1774492604"（Unix エポックベースのビルドタイムスタンプ）
-
 declare global {
   interface Window {
+    /** Unix-epoch build timestamp of the web app, e.g. `"1774492604"`. */
     __sc_version?: string
   }
 }
 
+/** The web app's build stamp, injected by the server as an inline script. */
 export function getSoundCloudVersion(): string {
   return window.__sc_version ?? panic("window.__sc_version is not set")
 }
-
-// ── Backbone Version ──────────────────────────────────────────────────────
-// レガシー SPA（webpackJsonp）の 1-76ec11d8.js チャンクに含まれる。
-// emulateHTTP / emulateJSON は Backbone 固有プロパティで、Underscore と区別可能。
 
 interface BackboneExports {
   VERSION: string
@@ -26,6 +20,7 @@ interface BackboneExports {
   emulateJSON: boolean
 }
 
+/** Backbone's version, read from the legacy SPA runtime. */
 export function getBackboneVersion(): string {
   const backbone = getModule(
     ["VERSION", "noConflict", "emulateHTTP", "emulateJSON"],
@@ -35,23 +30,14 @@ export function getBackboneVersion(): string {
   return backbone?.VERSION ?? panic("Could not find Backbone module")
 }
 
-// ── React Version ─────────────────────────────────────────────────────────
-// React はレガシー SPA には存在しない。
-// Next.js webi iframe（/n/pages/standby）の webpackChunk_N_E ランタイムにのみ存在する。
-// __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED は React 固有の識別子。
-//
-// 注意: HAR 解析では .version の semver 文字列が直接確認できなかったが、
-// React 17 以降はすべて version プロパティをエクスポートする仕様のため、
-// フィンガープリントに "version" を含めることで存在を保証する。
-
 interface ReactExports {
   version: string
   createElement: (...args: unknown[]) => unknown
   __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED: unknown
 }
 
+/** React's version, read from the standby iframe runtime. */
 export function getReactVersion(): string {
-  // webpackRequire 省略 → getFrameWebpackRequire()（iframe 側）がデフォルト
   const react = getModule([
     "version",
     "createElement",

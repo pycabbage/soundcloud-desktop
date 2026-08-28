@@ -20,6 +20,8 @@ We use a Nyx-style lightweight format with four sections:
 | 0003 | [Vendor ThemeStore subscription over MutationObserver](0003-theme-vendor-store.md) | accepted |
 | 0004 | [Acrylic kept active while inactive via WM_NCACTIVATE interception](0004-acrylic-active-while-inactive.md) | accepted |
 | 0005 | [Push-based startup hooks instead of polling in the inject script](0005-inject-push-based-startup-hooks.md) | accepted |
+| 0006 | [Like state driven through the vendor toggle collection](0006-like-state-via-toggle-collection.md) | accepted |
+| 0007 | [Windows thumbnail toolbar with procedurally drawn glyphs](0007-windows-thumbnail-toolbar.md) | accepted |
 
 ## Conventions
 

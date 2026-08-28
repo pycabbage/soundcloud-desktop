@@ -216,10 +216,8 @@ fn build_activity_playing_has_timestamps() {
     let fields = PresenceFields::from_attributes(&attrs);
     let now_ms = 1_000_000_000i64;
     let act = build_activity(&fields, true, 30000.0, now_ms);
-    // We can't easily inspect Activity internals, but we verify it doesn't panic
-    // and that the function returns successfully. The real verification is that
-    // it serializes correctly (tested via Discord IPC integration).
-    let _ = act; // Activity built successfully
+    // Activity exposes no accessors; this pins construction, not the payload.
+    let _ = act;
 }
 
 #[test]
@@ -277,7 +275,6 @@ fn apply_playback_change_with_state() {
     assert_eq!(attrs.title.as_deref(), Some("Song"));
     assert_eq!(pos, 1000.0);
     assert!(!was_playing);
-    // Verify state was updated
     assert!(state.as_ref().unwrap().is_playing);
     assert_eq!(state.as_ref().unwrap().position_ms, 1000.0);
 }

@@ -1,4 +1,3 @@
-//
 /* oxlint-disable typescript/consistent-type-assertions */
 
 import { panic } from "./utils"
@@ -109,13 +108,7 @@ function getExports(mod: IModule, recursionLimit = 5) {
   else return mod
 }
 
-/**
- * Find a module by inspecting its exports.
- *
- * `getModule` fingerprints modules by member name, which cannot identify
- * classes whose distinguishing members live on the prototype or whose members
- * are shared with sibling classes. Those need a value-based fingerprint.
- */
+/** Find a module by running a value-based fingerprint over its exports. */
 export function findModule<T>(
   predicate: (exports: object) => boolean,
   webpackRequire?: WebpackRequire

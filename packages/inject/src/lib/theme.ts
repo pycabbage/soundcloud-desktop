@@ -29,9 +29,6 @@ export const useThemeStore = create<ThemeStore>()(
  * to us instead of observed from the DOM.
  */
 function connectVendorTheme(): void {
-  // The ThemeStore lives in the top document's System A runtime
-  // (webpackJsonp), not in the standby iframe — pass getWebpackRequire()
-  // explicitly so getModule doesn't scan the iframe runtime.
   try {
     const vendor = getModule(
       ["getTheme", "setTheme", "onThemeChange"],

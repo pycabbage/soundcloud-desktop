@@ -20,12 +20,7 @@ function isSoundLikesClass(exports: object): exports is ToggleCollectionClass {
   )
 }
 
-/**
- * The `me/track_likes/ids` collection, holding the id of every track the
- * signed-in user has liked. Constructing it hands back the shared instance the
- * social actions facade mutates, so `change` also fires for likes toggled
- * through SoundCloud's own UI.
- */
+/** The shared `me/track_likes/ids` collection of every liked track id. */
 export function getSoundLikes() {
   const SoundLikes = findModule<ToggleCollectionClass>(isSoundLikesClass, getWebpackRequire())
   return SoundLikes ? new SoundLikes() : panic("Could not find the sound likes collection")
