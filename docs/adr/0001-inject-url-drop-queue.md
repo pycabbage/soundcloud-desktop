@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted
+Accepted — Decision steps 2–3 superseded by
+[0005](0005-inject-push-based-startup-hooks.md)
 
 ## Context
 
@@ -49,6 +50,12 @@ existing vendor binding:
    - Otherwise delegate to the original handler unchanged, so file uploads
      keep their native behavior.
 
+Steps 2 and 3 are no longer how the interception works.
+[0005](0005-inject-push-based-startup-hooks.md) replaced the event-store lookup
+and its retry loop with a `jQuery.event.special.drop.preDispatch` hook, which
+needs no knowledge of when or where the vendor binds. Step 1 and the resolution
+path below are unchanged.
+
 Resolution path (`lib/dropUrl.ts`):
 
 - Plain track permalinks go straight through the internal
@@ -73,7 +80,9 @@ Resolution path (`lib/dropUrl.ts`):
 
 - Depends on the vendor keeping its jQuery binding pattern
   (`_data(document, "events").drop`). Mitigated by member fingerprint lookup +
-  bounded polling rather than hard-coded module IDs.
+  bounded polling rather than hard-coded module IDs. Removed entirely by
+  [0005](0005-inject-push-based-startup-hooks.md), which no longer reads the
+  event store.
 - The wrapper adds one function indirection per drop event (negligible).
 
 **Project priorities honored**
@@ -82,4 +91,6 @@ Resolution path (`lib/dropUrl.ts`):
   `dropHandler.ts` + `dropUrl.ts`. The Rust side only flips the webview config
   (`dragDropEnabled: false`) so OS drag events reach the DOM at all.
 - パフォーマンス優先 (performance first): no polling after the binding is
-  found, no DOM observation, O(1) work per drop event.
+  found (none at all since
+  [0005](0005-inject-push-based-startup-hooks.md)), no DOM observation, O(1)
+  work per drop event.

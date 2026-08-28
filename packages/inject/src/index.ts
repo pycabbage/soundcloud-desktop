@@ -103,6 +103,57 @@ void listen("like", () => {
   if (sound) socialActions.like(sound)
 })
 
+const V2_LAYOUT_FRAME_SELECTOR = "iframe.webiIframe.webiIframeV2Layout"
+
+const injectSheet = new CSSStyleSheet()
+injectSheet.replaceSync(injectStyles)
+
+/** Adopts the inject stylesheet and keeps it adopted across vendor resets. */
+function adoptInjectStyles(): void {
+  Object.defineProperty(document, "adoptedStyleSheets", {
+    configurable: true,
+    enumerable: true,
+    get(this: Document): CSSStyleSheet[] {
+      return Reflect.get(Document.prototype, "adoptedStyleSheets", this)
+    },
+    set(this: Document, sheets: CSSStyleSheet[]) {
+      const next = sheets.includes(injectSheet) ? sheets : [...sheets, injectSheet]
+      Reflect.set(Document.prototype, "adoptedStyleSheets", next, this)
+    },
+  })
+
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, injectSheet]
+}
+
+/** Makes the V2 layout track iframe blend into the acrylic background. */
+function applyV2FrameStyles(frame: HTMLIFrameElement): void {
+  const frameDocument = frame.contentDocument
+  const frameWindow = frameDocument?.defaultView
+  if (!frameDocument || !frameWindow) return
+
+  const frameSheet = new frameWindow.CSSStyleSheet()
+  frameSheet.replaceSync("body{background-color:transparent}")
+  frameDocument.adoptedStyleSheets.push(frameSheet)
+  frame.style.backgroundColor = "transparent"
+}
+
+/** Applies the frame styles on every load of the V2 layout iframe. */
+function watchV2LayoutFrame(): void {
+  document.addEventListener(
+    "load",
+    (e) => {
+      const { target } = e
+      if (target instanceof HTMLIFrameElement && target.matches(V2_LAYOUT_FRAME_SELECTOR)) {
+        applyV2FrameStyles(target)
+      }
+    },
+    true
+  )
+
+  const frame = document.querySelector<HTMLIFrameElement>(V2_LAYOUT_FRAME_SELECTOR)
+  if (frame) applyV2FrameStyles(frame)
+}
+
 /**
  * The liked ids back the taskbar Like button. SoundCloud fetches the same
  * collection for its own like buttons, so this is at most one extra request.
@@ -148,41 +199,14 @@ async function restoreSessionState() {
 
 async function init() {
   insertTitlebar()
+  installDropUrlHandler()
 
   document.querySelector("div#app")?.addEventListener("scroll", () => {
     window.dispatchEvent(new Event("scroll"))
   })
 
-  // Inject styles first so the layout is correct even if a later IPC await
-  // stalls during startup. The vendor app can reset adoptedStyleSheets or
-  // rebuild body content while booting, so re-apply until it sticks.
-  const injectStylesheet = (): void => {
-    const sheet = new CSSStyleSheet()
-    sheet.replaceSync(injectStyles)
-    document.adoptedStyleSheets.push(sheet)
-
-    const v2Frame = document.querySelector<HTMLIFrameElement>(
-      "iframe.webiIframe.webiIframeV2Layout"
-    )
-    if (v2Frame?.contentDocument?.defaultView) {
-      const frameSheet = new v2Frame.contentDocument.defaultView.CSSStyleSheet()
-      frameSheet.replaceSync("body{background-color:transparent}")
-      v2Frame.contentDocument.adoptedStyleSheets.push(frameSheet)
-      v2Frame.style.backgroundColor = "transparent"
-    }
-  }
-
-  injectStylesheet()
-
-  // Re-apply if the vendor boot wipes our stylesheet (checked a few times).
-  for (const delay of [1000, 3000, 8000]) {
-    setTimeout(() => {
-      if (!document.adoptedStyleSheets.some((s) => s.cssRules.length > 0)) {
-        injectStylesheet()
-        console.debug("[sc-desktop] re-applied inject styles")
-      }
-    }, delay)
-  }
+  adoptInjectStyles()
+  watchV2LayoutFrame()
 
   playManager.on("state:shuffle", async (value: boolean) => {
     await invoke("save_shuffle_state", { shuffle: value })
@@ -192,10 +216,7 @@ async function init() {
     await invoke("save_repeat_mode", { mode })
   })
 
-  // These wait on the vendor app or on IPC, so they only start once the UI
-  // setup above is done, and they run concurrently with each other. Each one
-  // reports its own failure, so a slow or broken one never holds up the rest.
-  await Promise.all([installDropUrlHandler(), loadLikedTracks(), restoreSessionState()])
+  await Promise.all([loadLikedTracks(), restoreSessionState()])
 }
 
 void init()
