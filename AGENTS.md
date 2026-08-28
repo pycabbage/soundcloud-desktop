@@ -199,6 +199,15 @@ let Some((attrs, pos, was_playing)) = result else {
 1. After editing TypeScript: `cd packages/inject && bun run build`
 2. After editing Rust: `cargo check --lib` to verify compilation
 3. `cargo tauri dev` auto-builds inject via `beforeDevCommand`
+4. Run the `/sanitize-artifacts` skill to remove conversation-derived comments, and move remaining comment content into an ADR.
+
+After editing ADRs or other Markdown documents, run:
+
+```bash
+bunx markdownlint-cli2 "*.md" "docs/**/*.md" --fix
+```
+
+Fix any remaining lint errors reported by the command.
 
 ---
 
