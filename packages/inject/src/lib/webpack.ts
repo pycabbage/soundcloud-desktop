@@ -109,6 +109,26 @@ function getExports(mod: IModule, recursionLimit = 5) {
   else return mod
 }
 
+/**
+ * Find a module by inspecting its exports.
+ *
+ * `getModule` fingerprints modules by member name, which cannot identify
+ * classes whose distinguishing members live on the prototype or whose members
+ * are shared with sibling classes. Those need a value-based fingerprint.
+ */
+export function findModule<T>(
+  predicate: (exports: object) => boolean,
+  webpackRequire?: WebpackRequire
+): T | undefined {
+  if (!webpackRequire) webpackRequire = getFrameWebpackRequire()
+  const modules = getAllModules(webpackRequire)
+  for (const key of Object.keys(modules)) {
+    const exports = getExports(modules[key as keyof typeof modules] as IModule)
+    if (exports && predicate(exports)) return exports as T
+  }
+  return undefined
+}
+
 export function getModule(member: string[], getAll = false, webpackRequire?: WebpackRequire) {
   if (!webpackRequire) webpackRequire = getFrameWebpackRequire()
   const modules = getAllModules(webpackRequire)

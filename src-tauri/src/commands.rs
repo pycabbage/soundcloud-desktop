@@ -55,6 +55,26 @@ pub async fn event_playback_state_changed(
         app.clone(),
     );
 
+    #[cfg(windows)]
+    crate::thumbbar::set_playing(&app, is_playing);
+
+    Ok(())
+}
+
+/// Report whether the current track is in the user's likes, so the thumbnail
+/// toolbar can show Like or Dislike. `None` means no track is loaded.
+#[tauri::command]
+pub async fn event_like_state_changed(
+    app: tauri::AppHandle,
+    is_liked: Option<bool>,
+) -> Result<(), String> {
+    info!(?is_liked, "event: like_state_changed");
+
+    #[cfg(windows)]
+    crate::thumbbar::set_liked(&app, is_liked);
+    #[cfg(not(windows))]
+    let _ = app;
+
     Ok(())
 }
 

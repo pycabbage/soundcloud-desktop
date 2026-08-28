@@ -175,6 +175,7 @@ const player = getPlayerModule() ?? panic("Could not find player module")
 - DO NOT use absolute module IDs (e.g. `getWebpackRequire()(2847)`); Use `getModule()` with member fingerprints instead.
 - DO NOT use `type ...` for object types; Use `interface` instead.
 - DO NOT use `... as SomeType` for type assertions.
+- DO NOT use `void (async () => { ... })()`, use async / await
 
 ---
 

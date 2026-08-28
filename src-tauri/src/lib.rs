@@ -2,6 +2,7 @@ mod acrylic;
 mod commands;
 mod discord;
 mod models;
+mod thumbbar;
 mod tray;
 mod window;
 
@@ -14,9 +15,9 @@ use tauri_plugin_store::StoreExt;
 use tracing::{info, warn};
 
 use commands::{
-    event_change_current_sound, event_playback_state_changed, event_seeked, get_settings,
-    post_init, save_autostart, save_discord_enabled, save_repeat_mode, save_shuffle_state,
-    save_start_minimized,
+    event_change_current_sound, event_like_state_changed, event_playback_state_changed,
+    event_seeked, get_settings, post_init, save_autostart, save_discord_enabled, save_repeat_mode,
+    save_shuffle_state, save_start_minimized,
 };
 use discord::{CurrentSoundState, DiscordState, PauseTimeoutHandle, DISCORD_APP_ID};
 use models::AppSettings;
@@ -143,6 +144,7 @@ pub fn run() {
         .on_window_event(tray::on_window_event)
         .invoke_handler(tauri::generate_handler![
             event_change_current_sound,
+            event_like_state_changed,
             event_playback_state_changed,
             event_seeked,
             post_init,

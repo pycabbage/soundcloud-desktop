@@ -2,6 +2,7 @@ fn main() {
     tauri_build::try_build(tauri_build::Attributes::new().app_manifest(
         tauri_build::AppManifest::new().commands(&[
             "event_change_current_sound",
+            "event_like_state_changed",
             "event_playback_state_changed",
             "event_seeked",
             "post_init",

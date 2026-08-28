@@ -4,6 +4,8 @@ import { createStore } from "zustand/vanilla"
 
 import { installDropUrlHandler } from "./lib/dropHandler"
 import { getPlayManager } from "./lib/playManager"
+import { getSocialActions } from "./lib/socialActions"
+import { getSoundLikes } from "./lib/soundLikes"
 import { insertTitlebar } from "./toolbar"
 import type { Sound } from "./types/sound"
 import type { SoundEventObject } from "./types/soundEventObject"
@@ -12,8 +14,25 @@ import type { RepeatMode } from "./types/utils"
 import injectStyles from "./inject.scss"
 
 const playManager = getPlayManager()
+const socialActions = getSocialActions()
+const soundLikes = getSoundLikes()
 
 console.log("inject script loaded")
+
+function getCurrentSound() {
+  return playManager.hasCurrentSound() ? playManager.getCurrentSound() : undefined
+}
+
+/**
+ * Tell the backend whether the playing track is liked, so the taskbar
+ * thumbnail toolbar can show Like or Dislike. Null means nothing is playing.
+ */
+async function reportLikeState() {
+  const trackId = getCurrentSound()?.get("id")
+  await invoke("event_like_state_changed", {
+    isLiked: trackId === undefined ? null : soundLikes.get(trackId) === true,
+  })
+}
 
 async function handlePlay(e: SoundEventObject) {
   const currentSoundTime =
@@ -56,11 +75,18 @@ const soundStore = createStore<{
 
 playManager.on("change:currentSound", async (payload) => {
   soundStore.getState().updateSound(payload?.current)
+  await reportLikeState()
   if (payload?.current) {
     await invoke("event_change_current_sound", {
       attributes: payload.current.attributes,
     })
   }
+})
+
+// Covers likes toggled from SoundCloud's own buttons as well as ours, since
+// both end up mutating this collection.
+soundLikes.on("change", () => {
+  void reportLikeState()
 })
 
 void listen("play-pause", () => {
@@ -72,10 +98,56 @@ void listen("next", () => {
 void listen("previous", () => {
   playManager.playPrev({ userInitiated: true })
 })
+void listen("like", () => {
+  const sound = getCurrentSound()
+  if (sound) socialActions.like(sound)
+})
+
+/**
+ * The liked ids back the taskbar Like button. SoundCloud fetches the same
+ * collection for its own like buttons, so this is at most one extra request.
+ */
+async function loadLikedTracks() {
+  try {
+    await soundLikes.fetch()
+    await reportLikeState()
+  } catch (err) {
+    console.warn("[sc-desktop] could not load liked tracks:", err)
+  }
+}
+
+/**
+ * Hands the currently playing track to the backend and restores the shuffle /
+ * repeat preferences it persisted for us.
+ */
+async function restoreSessionState() {
+  try {
+    if (playManager.hasCurrentSound()) {
+      const currentSound = playManager.getCurrentSound()!
+      soundStore.getState().updateSound(currentSound)
+      await invoke("event_change_current_sound", {
+        attributes: currentSound.attributes,
+      })
+    }
+
+    const prefs = await invoke<{ shuffle: boolean; repeat_mode: RepeatMode }>("post_init")
+    const currentShuffle = playManager.getState("shuffle")
+    const { repeatMode: currentRepeatMode } = playManager.getQueueState()
+
+    if (currentShuffle !== prefs.shuffle) {
+      playManager.toggleShuffle()
+    }
+    if (currentRepeatMode !== prefs.repeat_mode) {
+      playManager.setRepeatMode(prefs.repeat_mode)
+    }
+    console.debug("[sc-desktop] Init complete")
+  } catch (err) {
+    console.warn("[sc-desktop] init setup failed:", err)
+  }
+}
 
 async function init() {
   insertTitlebar()
-  installDropUrlHandler()
 
   document.querySelector("div#app")?.addEventListener("scroll", () => {
     window.dispatchEvent(new Event("scroll"))
@@ -120,30 +192,10 @@ async function init() {
     await invoke("save_repeat_mode", { mode })
   })
 
-  // IPC-dependent setup must never block the UI init above.
-  void (async () => {
-    if (playManager.hasCurrentSound()) {
-      const currentSound = playManager.getCurrentSound()!
-      soundStore.getState().updateSound(currentSound)
-      await invoke("event_change_current_sound", {
-        attributes: currentSound.attributes,
-      })
-    }
-
-    const prefs = await invoke<{ shuffle: boolean; repeat_mode: RepeatMode }>("post_init")
-    const currentShuffle = playManager.getState("shuffle")
-    const { repeatMode: currentRepeatMode } = playManager.getQueueState()
-
-    if (currentShuffle !== prefs.shuffle) {
-      playManager.toggleShuffle()
-    }
-    if (currentRepeatMode !== prefs.repeat_mode) {
-      playManager.setRepeatMode(prefs.repeat_mode)
-    }
-    console.debug("[sc-desktop] Init complete")
-  })().catch((err: unknown) => {
-    console.warn("[sc-desktop] init setup failed:", err)
-  })
+  // These wait on the vendor app or on IPC, so they only start once the UI
+  // setup above is done, and they run concurrently with each other. Each one
+  // reports its own failure, so a slow or broken one never holds up the rest.
+  await Promise.all([installDropUrlHandler(), loadLikedTracks(), restoreSessionState()])
 }
 
 void init()

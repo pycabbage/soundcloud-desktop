@@ -15,8 +15,11 @@ export interface DestroyManager extends Backbone.Events {
   clearPlayHistory(): void
   /** Destroy the given model. */
   destroy(model: unknown, opts?: Record<string, unknown>): void
-  /** Toggle the like state on the given model. */
-  like(model: unknown, state: boolean, opts?: Record<string, unknown>): void
+  /**
+   * Toggle the like state on the given model, persisting it through the
+   * matching toggle collection. Omitting `state` flips the current value.
+   */
+  like(model: unknown, state?: boolean, opts?: Record<string, unknown>): unknown
   /** Toggle the repost state on the given model. */
   repost(model: unknown, state: boolean, opts?: Record<string, unknown>): void
   /** Toggle the follow state on the given model. */

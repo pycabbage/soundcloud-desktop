@@ -59,32 +59,40 @@ function waitForDropEntry(
   })
 }
 
-export function installDropUrlHandler(): void {
-  void (async () => {
-    try {
-      const $ = getJQuery()
-      const found = await waitForDropEntry($, 0)
-      if (!found) return
+/**
+ * The vendor drop handler is synchronous and has to answer the event right
+ * away, so queuing is started here and its failure only logged.
+ */
+async function queueDroppedUrl(url: string) {
+  try {
+    await enqueueDroppedUrl(url)
+  } catch (err) {
+    console.warn("[sc-desktop] failed to queue dropped url:", url, err)
+  }
+}
 
-      const { entry } = found
-      const originalHandler = entry.handler
+export async function installDropUrlHandler(): Promise<void> {
+  try {
+    const $ = getJQuery()
+    const found = await waitForDropEntry($, 0)
+    if (!found) return
 
-      entry.handler = function patchedDropHandler(this: unknown, ...args: unknown[]) {
-        const e = args[0] as DragEvent
-        const url = extractDroppedUrl(e)
-        if (url) {
-          void enqueueDroppedUrl(url).catch((err: unknown) => {
-            console.warn("[sc-desktop] failed to queue dropped url:", url, err)
-          })
-          e.preventDefault()
-          return false
-        }
-        return originalHandler.apply(this, args)
+    const { entry } = found
+    const originalHandler = entry.handler
+
+    entry.handler = function patchedDropHandler(this: unknown, ...args: unknown[]) {
+      const e = args[0] as DragEvent
+      const url = extractDroppedUrl(e)
+      if (url) {
+        void queueDroppedUrl(url)
+        e.preventDefault()
+        return false
       }
-
-      console.debug("[sc-desktop] patched document drop handler for URL queuing")
-    } catch (e) {
-      console.warn("[sc-desktop] failed to patch document drop handler:", e)
+      return originalHandler.apply(this, args)
     }
-  })()
+
+    console.debug("[sc-desktop] patched document drop handler for URL queuing")
+  } catch (e) {
+    console.warn("[sc-desktop] failed to patch document drop handler:", e)
+  }
 }

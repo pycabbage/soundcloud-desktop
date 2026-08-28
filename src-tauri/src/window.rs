@@ -7,7 +7,7 @@ use tauri_plugin_window_state::{AppHandleExt, StateFlags};
 use tracing::{debug, error};
 
 #[cfg(windows)]
-use crate::acrylic;
+use crate::{acrylic, thumbbar};
 
 fn is_allowed_url(url: &str) -> bool {
     (url.starts_with("https://soundcloud.com")
@@ -80,7 +80,11 @@ pub fn create_main_window(
     )?;
 
     #[cfg(windows)]
-    acrylic::install_keep_active_subclass(window.hwnd().map(|h| h.0 as isize).unwrap_or(0));
+    {
+        let hwnd = window.hwnd().map(|h| h.0 as isize).unwrap_or(0);
+        acrylic::install_keep_active_subclass(hwnd);
+        thumbbar::install(app.handle(), hwnd);
+    }
 
     window.on_window_event({
         let app_handle = app.handle().clone();
