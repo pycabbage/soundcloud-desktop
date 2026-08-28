@@ -5,6 +5,8 @@ import tailwindPostCSSPlugin from "@tailwindcss/postcss"
 import postcss from "postcss"
 import { compileAsync } from "sass"
 
+import pkg from "../package.json"
+
 const isProd = Bun.env.NODE_ENV === "production"
 
 const SCSSLoaderPlugin: Bun.BunPlugin = {
@@ -69,5 +71,18 @@ await Bun.build({
   format: "iife",
   outdir: "./dist",
   minify: isProd,
+  // Emits the `sourceMappingURL` comment and a content-derived `debugId`.
+  sourcemap: "linked",
+  // Names the eval'd bundle so its stack frames carry a filename.
+  footer: "//# sourceURL=app:///inject/index.js",
+  define: {
+    // Public ingest key, not a secret. Also in src-tauri/src/telemetry.rs.
+    __SENTRY_DSN__: JSON.stringify(
+      "https://f78ee57daddf5e3c3bfc83dee8abff2b@o4504452056875008.ingest.us.sentry.io/4511989617983488"
+    ),
+    // Must equal what the Rust SDK reports: `CARGO_PKG_NAME@CARGO_PKG_VERSION`.
+    __SENTRY_RELEASE__: JSON.stringify(`soundcloud-desktop@${pkg.version}`),
+    __SENTRY_ENVIRONMENT__: JSON.stringify(isProd ? "production" : "development"),
+  },
   plugins: [SCSSLoaderPlugin, PostCSSLoaderPlugin, SVGComponentPlugin],
 })

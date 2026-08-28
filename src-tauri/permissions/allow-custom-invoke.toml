@@ -11,6 +11,7 @@ permissions = [
   "allow-event-seeked",
   "allow-post-init",
   "allow-save-autostart",
+  "allow-save-session-replay-enabled",
   "allow-event-change-current-sound",
   "allow-event-like-state-changed"
 ]

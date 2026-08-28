@@ -84,12 +84,17 @@ jobs:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      # NODE_ENV must also reach `beforeBuildCommand`, which rebuilds the bundle
+      # inside tauri-action; without it the shipped bundle is a dev build.
       - name: Prepare JS bundle
-        run: |
-          bun install --frozen-lockfile
-          bun run --filter @soundcloud-desktop/inject build
+        env:
+          NODE_ENV: production
+        run: bun run --filter @soundcloud-desktop/inject build
       - uses: tauri-apps/tauri-action@v1
         env:
+          NODE_ENV: production
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
@@ -100,3 +105,19 @@ jobs:
           prerelease: ${{ contains(github.ref, '-beta') }}
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
+      # After the build, so the uploaded map matches the shipped bundle.
+      - name: Upload source maps to Sentry
+        shell: bash
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: cabbagelettuce
+          SENTRY_PROJECT: soundcloud-desktop
+          TAG: ${{ github.ref_name }}
+        run: |
+          release="soundcloud-desktop@${TAG#v}"
+          bunx @sentry/cli@3 releases new "$release"
+          bunx @sentry/cli@3 sourcemaps upload \
+            --release "$release" \
+            --url-prefix '~/inject' \
+            packages/inject/dist
+          bunx @sentry/cli@3 releases finalize "$release"

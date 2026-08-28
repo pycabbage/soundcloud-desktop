@@ -4,6 +4,7 @@ import { createStore } from "zustand/vanilla"
 
 import { installDropUrlHandler } from "./lib/dropHandler"
 import { getPlayManager } from "./lib/playManager"
+import { initSentry } from "./lib/sentry"
 import { getSocialActions } from "./lib/socialActions"
 import { getSoundLikes } from "./lib/soundLikes"
 import { insertTitlebar } from "./toolbar"
@@ -12,6 +13,9 @@ import type { SoundEventObject } from "./types/soundEventObject"
 import type { RepeatMode } from "./types/utils"
 
 import injectStyles from "./inject.scss"
+
+// First, so the module lookups below are already covered when they fail.
+initSentry()
 
 const playManager = getPlayManager()
 const socialActions = getSocialActions()

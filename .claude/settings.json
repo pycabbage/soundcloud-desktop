@@ -1,0 +1,6 @@
+{
+  "enabledPlugins": {
+    "sentry@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {}
+}

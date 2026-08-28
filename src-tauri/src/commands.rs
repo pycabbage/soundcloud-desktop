@@ -146,22 +146,7 @@ pub async fn save_repeat_mode(app: tauri::AppHandle, mode: String) -> Result<(),
 
 #[tauri::command]
 pub async fn get_settings(app: tauri::AppHandle) -> Result<AppSettings, String> {
-    let store = app.store("settings.json").map_err(|e| e.to_string())?;
-    let defaults = AppSettings::default();
-    Ok(AppSettings {
-        discord_enabled: store
-            .get("discord_enabled")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(defaults.discord_enabled),
-        start_minimized: store
-            .get("start_minimized")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(defaults.start_minimized),
-        autostart: store
-            .get("autostart")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(defaults.autostart),
-    })
+    Ok(AppSettings::load(&app))
 }
 
 #[tauri::command]
@@ -215,6 +200,17 @@ pub async fn save_start_minimized(
     info!(start_minimized, "event: save_start_minimized");
     let store = app.store("settings.json").map_err(|e| e.to_string())?;
     store.set("start_minimized", start_minimized);
+    store.save().map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub async fn save_session_replay_enabled(
+    app: tauri::AppHandle,
+    enabled: bool,
+) -> Result<(), String> {
+    info!(enabled, "event: save_session_replay_enabled");
+    let store = app.store("settings.json").map_err(|e| e.to_string())?;
+    store.set("session_replay_enabled", enabled);
     store.save().map_err(|e| e.to_string())
 }
 

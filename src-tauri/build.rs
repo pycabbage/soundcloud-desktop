@@ -12,6 +12,7 @@ fn main() {
             "save_discord_enabled",
             "save_start_minimized",
             "save_autostart",
+            "save_session_replay_enabled",
         ]),
     ))
     .unwrap();

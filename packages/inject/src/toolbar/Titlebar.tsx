@@ -12,9 +12,11 @@ export function Titlebar() {
     discord_enabled,
     start_minimized,
     autostart,
+    session_replay_enabled,
     setDiscordEnabled,
     setStartMinimized,
     setAutostart,
+    setSessionReplayEnabled,
   } = useSettingsStore()
 
   return (
@@ -79,6 +81,11 @@ export function Titlebar() {
               label="Launch at Startup"
               checked={autostart}
               onChange={() => setAutostart(!autostart)}
+            />
+            <CheckboxMenuItem
+              label="Send Session Replay"
+              checked={session_replay_enabled}
+              onChange={() => setSessionReplayEnabled(!session_replay_enabled)}
             />
           </MenuButton>
         </div>

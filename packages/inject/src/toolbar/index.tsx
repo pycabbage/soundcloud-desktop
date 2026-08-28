@@ -1,3 +1,4 @@
+import { ErrorBoundary } from "@sentry/react"
 import { createContext } from "react"
 import { createRoot } from "react-dom/client"
 
@@ -54,7 +55,10 @@ export function insertTitlebar() {
   })
   root.render(
     <ShadowRootContext.Provider value={shadowRoot}>
-      <Titlebar />
+      {/* A render error would otherwise tear down the titlebar without a trace. */}
+      <ErrorBoundary fallback={<></>}>
+        <Titlebar />
+      </ErrorBoundary>
     </ShadowRootContext.Provider>
   )
 }

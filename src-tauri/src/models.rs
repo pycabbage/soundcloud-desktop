@@ -1,6 +1,10 @@
 #![allow(dead_code)]
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
+use tauri::{Manager, Runtime};
+use tauri_plugin_store::StoreExt;
+use tracing::{info, warn};
 
 /// Snapshot of the currently playing track and its playback state.
 #[derive(Clone)]
@@ -25,6 +29,9 @@ pub struct AppSettings {
     pub start_minimized: bool,
     #[serde(default)]
     pub autostart: bool,
+    /// Session Replay records the SoundCloud UI itself, so it stays opt-in.
+    #[serde(default)]
+    pub session_replay_enabled: bool,
 }
 
 fn default_true() -> bool {
@@ -37,6 +44,62 @@ impl Default for AppSettings {
             discord_enabled: true,
             start_minimized: false,
             autostart: false,
+            session_replay_enabled: false,
+        }
+    }
+}
+
+impl AppSettings {
+    /// Reads `settings.json`, falling back to [`Default`] for anything missing
+    /// or unreadable. Keys and fallbacks come from the serde attributes above.
+    pub fn load<R: Runtime, M: Manager<R>>(manager: &M) -> Self {
+        let store = match manager.store("settings.json") {
+            Ok(store) => store,
+            Err(e) => {
+                warn!(error = %e, "could not open settings store, using defaults");
+                return Self::default();
+            }
+        };
+
+        let stored = Value::Object(store.entries().into_iter().collect());
+        match serde_json::from_value(stored) {
+            Ok(settings) => settings,
+            Err(e) => {
+                warn!(error = %e, "could not parse stored settings, using defaults");
+                Self::default()
+            }
+        }
+    }
+
+    /// Writes back any key the store is missing so `settings.json` stays
+    /// editable by hand.
+    pub fn persist_missing_defaults<R: Runtime, M: Manager<R>>(manager: &M) {
+        let store = match manager.store("settings.json") {
+            Ok(store) => store,
+            Err(e) => {
+                warn!(error = %e, "could not open settings store to seed defaults");
+                return;
+            }
+        };
+
+        let Ok(Value::Object(defaults)) = serde_json::to_value(Self::default()) else {
+            return;
+        };
+
+        let missing = defaults
+            .into_iter()
+            .filter(|(key, _)| !store.has(key))
+            .collect::<Vec<_>>();
+        if missing.is_empty() {
+            return;
+        }
+
+        for (key, value) in missing {
+            store.set(key, value);
+        }
+        match store.save() {
+            Ok(()) => info!("wrote missing default settings to settings.json"),
+            Err(e) => warn!(error = %e, "failed to save default settings"),
         }
     }
 }

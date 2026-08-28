@@ -130,6 +130,19 @@ Functions in Layer A should be pure and unit-testable.
 
 ---
 
+## Code Style (all languages)
+
+- DO NOT name a value used in one place; inline it and comment at the use site (a function returning a constant counts)
+- DO NOT extract a shared value unless it realistically changes AND divergence fails silently; one condition is not enough
+- DO NOT create a file to hold a constant, nor code to read it back
+- DO NOT declare `license` or `author` in a manifest; otherwise match the sibling package's fields
+- DO NOT re-derive from the working tree what the environment already supplies (e.g. `github.ref_name`, not `Cargo.toml`)
+- DO NOT parse structured files with `grep` / `cut`; `bun` reads TOML and JSON natively
+- DO NOT put CI secrets in a job-level `env`; scope them to the step that uses them
+- DO NOT adopt a dependency on behaviour alone; check downloads, ownership and maintenance first (under ~1k stars is not a candidate)
+
+---
+
 ## TypeScript Code Style
 
 ### Linter/Formatter (oxlint + oxfmt)

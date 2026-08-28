@@ -2,6 +2,7 @@ mod acrylic;
 mod commands;
 mod discord;
 mod models;
+pub mod telemetry;
 mod thumbbar;
 mod tray;
 mod window;
@@ -11,13 +12,12 @@ use std::sync::Arc;
 
 use discord_rich_presence::{DiscordIpc, DiscordIpcClient};
 use tauri::Manager;
-use tauri_plugin_store::StoreExt;
 use tracing::{info, warn};
 
 use commands::{
     event_change_current_sound, event_like_state_changed, event_playback_state_changed,
     event_seeked, get_settings, post_init, save_autostart, save_discord_enabled, save_repeat_mode,
-    save_shuffle_state, save_start_minimized,
+    save_session_replay_enabled, save_shuffle_state, save_start_minimized,
 };
 use discord::{CurrentSoundState, DiscordState, PauseTimeoutHandle, DISCORD_APP_ID};
 use models::AppSettings;
@@ -25,51 +25,8 @@ use models::AppSettings;
 pub struct DiscordEnabled(pub Arc<AtomicBool>);
 
 fn read_settings(app: &tauri::AppHandle) -> AppSettings {
-    let defaults = AppSettings::default();
-
-    let store = match app.store("settings.json") {
-        Ok(store) => store,
-        Err(e) => {
-            warn!(error = %e, "failed to open settings.json, using defaults");
-            return defaults;
-        }
-    };
-
-    // Persist default values for any keys missing from settings.json
-    let mut needs_save = false;
-    if !store.has("discord_enabled") {
-        store.set("discord_enabled", defaults.discord_enabled);
-        needs_save = true;
-    }
-    if !store.has("start_minimized") {
-        store.set("start_minimized", defaults.start_minimized);
-        needs_save = true;
-    }
-    if !store.has("autostart") {
-        store.set("autostart", defaults.autostart);
-        needs_save = true;
-    }
-    if needs_save {
-        match store.save() {
-            Ok(()) => info!("wrote missing default settings to settings.json"),
-            Err(e) => warn!(error = %e, "failed to save default settings to settings.json"),
-        }
-    }
-
-    let settings = AppSettings {
-        discord_enabled: store
-            .get("discord_enabled")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(defaults.discord_enabled),
-        start_minimized: store
-            .get("start_minimized")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(defaults.start_minimized),
-        autostart: store
-            .get("autostart")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(defaults.autostart),
-    };
+    AppSettings::persist_missing_defaults(app);
+    let settings = AppSettings::load(app);
     info!(?settings, "loaded settings from settings.json");
     settings
 }
@@ -154,6 +111,7 @@ pub fn run() {
             save_discord_enabled,
             save_start_minimized,
             save_autostart,
+            save_session_replay_enabled,
         ]);
     #[cfg(desktop)]
     {

@@ -1,5 +1,16 @@
 {
   "name": "@soundcloud-desktop/inject",
+  "version": "0.1.1-beta.5",
+  "description": "Injection script that exposes the SoundCloud web player to the desktop shell.",
+  "homepage": "https://github.com/pycabbage/soundcloud-desktop#readme",
+  "bugs": {
+    "url": "https://github.com/pycabbage/soundcloud-desktop/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pycabbage/soundcloud-desktop",
+    "directory": "packages/inject"
+  },
   "type": "module",
   "module": "src/index.ts",
   "scripts": {
@@ -9,6 +20,7 @@
     "lint:fix": "concurrently \"oxfmt\" \"oxlint --fix\""
   },
   "dependencies": {
+    "@sentry/react": "^10.72.0",
     "@soundcloud-desktop/tauri-controls": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
     "@tauri-apps/api": "^2.11.1",
