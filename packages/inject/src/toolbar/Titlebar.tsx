@@ -1,9 +1,10 @@
 import { WindowTitlebar } from "@soundcloud-desktop/tauri-controls"
+import { invoke } from "@tauri-apps/api/core"
 import { useId } from "react"
 
 import { cn } from "../utils/cn"
 import List from "./ic_fluent_list_24_filled.svg"
-import { CheckboxMenuItem, MenuButton } from "./menu"
+import { CheckboxMenuItem, MenuButton, MenuItem } from "./menu"
 import { useSettingsStore } from "./settings"
 
 export function Titlebar() {
@@ -86,6 +87,22 @@ export function Titlebar() {
               label="Send Session Replay"
               checked={session_replay_enabled}
               onChange={() => setSessionReplayEnabled(!session_replay_enabled)}
+            />
+          </MenuButton>
+
+          <MenuButton label="App">
+            <MenuItem label="Reload" onClick={() => window.location.reload()} />
+            <MenuItem
+              label="Version"
+              onClick={async () => {
+                await invoke("show_version_dialog")
+              }}
+            />
+            <MenuItem
+              label="Quit"
+              onClick={async () => {
+                await invoke("quit_app")
+              }}
             />
           </MenuButton>
         </div>

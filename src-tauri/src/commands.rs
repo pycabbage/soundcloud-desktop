@@ -7,6 +7,7 @@ use crate::discord::{
     handle_playback_changed, handle_seeked, handle_track_changed, CurrentSoundState, DiscordState,
     PauseTimeoutHandle,
 };
+use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_store::StoreExt;
 
 use crate::models::{AppSettings, PlaybackPrefs, SoundAttributes};
@@ -233,5 +234,25 @@ pub async fn save_autostart(app: tauri::AppHandle, autostart: bool) -> Result<()
         }
     }
 
+    Ok(())
+}
+
+// ─── App commands ─────────────────────────────────────────────────────────
+
+#[tauri::command]
+pub async fn show_version_dialog(app: tauri::AppHandle) -> Result<(), String> {
+    let version = app.package_info().version.to_string();
+    let _ = app
+        .dialog()
+        .message(format!("Version {version}"))
+        .title("Soundcloud Desktop")
+        .blocking_show();
+
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn quit_app(app: tauri::AppHandle) -> Result<(), String> {
+    app.exit(0);
     Ok(())
 }

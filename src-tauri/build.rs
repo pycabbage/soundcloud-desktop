@@ -13,6 +13,8 @@ fn main() {
             "save_start_minimized",
             "save_autostart",
             "save_session_replay_enabled",
+            "show_version_dialog",
+            "quit_app",
         ]),
     ))
     .unwrap();

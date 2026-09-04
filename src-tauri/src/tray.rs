@@ -36,6 +36,7 @@ pub fn setup(
             &MenuItem::with_id(app, "previous", "Previous", true, None::<&str>)?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "show_window", "Show Window", true, None::<&str>)?,
+            &MenuItem::with_id(app, "reload", "Reload", true, None::<&str>)?,
             &PredefinedMenuItem::separator(app)?,
             &MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?,
         ],
@@ -82,6 +83,12 @@ pub fn on_menu_event(app: &tauri::AppHandle, event: tauri::menu::MenuEvent) {
                 let _ = window.unminimize();
                 let _ = window.show();
                 let _ = window.set_focus();
+            }
+        }
+        "reload" => {
+            debug!("Reload menu item clicked");
+            if let Some(window) = app.get_webview_window("main") {
+                let _ = window.reload();
             }
         }
         _ => {}

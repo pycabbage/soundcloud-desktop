@@ -1,6 +1,6 @@
 {
   "name": "@soundcloud-desktop/inject",
-  "version": "0.1.1-beta.6",
+  "version": "0.1.1-beta.7",
   "description": "Injection script that exposes the SoundCloud web player to the desktop shell.",
   "homepage": "https://github.com/pycabbage/soundcloud-desktop#readme",
   "bugs": {

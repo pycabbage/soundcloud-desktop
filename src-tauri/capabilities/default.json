@@ -34,6 +34,7 @@
     "core:window:allow-start-dragging",
     "core:window:allow-toggle-maximize",
     "os:default",
+    "dialog:default",
     "allow-custom-invoke"
   ]
 }

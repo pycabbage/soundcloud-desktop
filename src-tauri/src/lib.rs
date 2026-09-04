@@ -16,8 +16,9 @@ use tracing::{info, warn};
 
 use commands::{
     event_change_current_sound, event_like_state_changed, event_playback_state_changed,
-    event_seeked, get_settings, post_init, save_autostart, save_discord_enabled, save_repeat_mode,
-    save_session_replay_enabled, save_shuffle_state, save_start_minimized,
+    event_seeked, get_settings, post_init, quit_app, save_autostart, save_discord_enabled,
+    save_repeat_mode, save_session_replay_enabled, save_shuffle_state, save_start_minimized,
+    show_version_dialog,
 };
 use discord::{CurrentSoundState, DiscordState, PauseTimeoutHandle, DISCORD_APP_ID};
 use models::AppSettings;
@@ -35,6 +36,7 @@ fn read_settings(app: &tauri::AppHandle) -> AppSettings {
 pub fn run() {
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_store::Builder::new().build())
         .plugin(tauri_plugin_window_state::Builder::new().build())
@@ -112,6 +114,8 @@ pub fn run() {
             save_start_minimized,
             save_autostart,
             save_session_replay_enabled,
+            show_version_dialog,
+            quit_app,
         ]);
     #[cfg(desktop)]
     {

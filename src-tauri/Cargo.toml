@@ -1,6 +1,6 @@
 [package]
 name = "soundcloud-desktop"
-version = "0.1.1-beta.6"
+version = "0.1.1-beta.7"
 description = "A SoundCloud desktop client built with Tauri."
 authors = ["you"]
 edition = "2021"
@@ -28,6 +28,7 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 tauri-plugin-store = "2"
 tauri-plugin-os = "2"
+tauri-plugin-dialog = "2"
 # `rustls` rather than the default `native-tls` so Linux builds need no OpenSSL headers.
 sentry = { version = "0.49", default-features = false, features = [
     "backtrace",
