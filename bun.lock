@@ -10,7 +10,7 @@
     },
     "packages/inject": {
       "name": "@soundcloud-desktop/inject",
-      "version": "0.1.1-beta.6",
+      "version": "0.1.1-beta.7",
       "dependencies": {
         "@sentry/react": "^10.72.0",
         "@soundcloud-desktop/tauri-controls": "workspace:*",
@@ -32,7 +32,7 @@
         "@types/react": "^19.2.18",
         "@types/react-dom": "^19.2.4",
         "concurrently": "^10.0.5",
-        "happy-dom": "^20.11.7",
+        "happy-dom": "^20.13.2",
         "oxfmt": "^0.65.0",
         "oxlint": "^1.80.0",
         "oxlint-plugin-eslint": "^1.80.0",
@@ -495,7 +495,7 @@
 
     "graceful-fs": ["graceful-fs@4.2.11", "", {}, "sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ=="],
 
-    "happy-dom": ["happy-dom@20.11.7", "", { "dependencies": { "@types/node": ">=20.0.0", "@types/whatwg-mimetype": "^3.0.2", "@types/ws": "^8.18.1", "buffer-image-size": "^0.6.4", "entities": "^7.0.1", "whatwg-mimetype": "^3.0.0", "ws": "^8.21.0" } }, "sha512-Hn/5K7CRC3BVjoRT/WOSDHH+pmNBp/NmkfOg9Fm9AboLifZyhYHPpBJJssM/TmQJT2bHQ56S6ftUW8Ewb2jHTw=="],
+    "happy-dom": ["happy-dom@20.13.2", "", { "dependencies": { "@types/node": ">=20.0.0", "@types/whatwg-mimetype": "^3.0.2", "@types/ws": "^8.18.1", "buffer-image-size": "^0.6.4", "entities": "^7.0.1", "whatwg-mimetype": "^3.0.0", "ws": "^8.21.0" } }, "sha512-VC9HoEaT3Jf3K/1g/GjMYGAZCCg+ULgGVcXJlAeSzdTj8mIoPJRp14KVclP5gpUcF/kauuaVB2ri2/WxXbl4vg=="],
 
     "immutable": ["immutable@5.1.5", "", {}, "sha512-t7xcm2siw+hlUM68I+UEOK+z84RzmN59as9DZ7P1l0994DKUWV7UXBMQZVxaoMSRQ+PBZbHCOoBt7a2wxOMt+A=="],
 
