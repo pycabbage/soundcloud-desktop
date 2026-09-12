@@ -46,7 +46,7 @@
     "oxlint-plugin-eslint": "^1.81.0",
     "oxlint-tsgolint": "^7.0.2001",
     "postcss-load-config": "^6.0.1",
-    "sass": "^1.103.1"
+    "sass": "^1.104.0"
   },
   "peerDependencies": {
     "@types/bun": "^1.3.11",
