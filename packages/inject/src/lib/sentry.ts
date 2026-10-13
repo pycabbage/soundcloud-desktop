@@ -11,7 +11,6 @@ export function initSentry(): void {
     dsn: __SENTRY_DSN__,
     release: __SENTRY_RELEASE__,
     environment: __SENTRY_ENVIRONMENT__,
-    enableLogs: true,
     attachStacktrace: true,
     // The Rust SDK tracks app sessions; a browser session would double-count.
     integrations: (defaults) =>
