@@ -2,7 +2,7 @@ import { invoke } from "@tauri-apps/api/core"
 import { listen } from "@tauri-apps/api/event"
 import { createStore } from "zustand/vanilla"
 
-import { installDropUrlHandler } from "./lib/dropHandler"
+import { installDropUrlHandler, installIframeDropHandler } from "./lib/dropHandler"
 import { getPlayManager } from "./lib/playManager"
 import { initSentry } from "./lib/sentry"
 import { getSocialActions } from "./lib/socialActions"
@@ -127,8 +127,13 @@ function adoptInjectStyles(): void {
   document.adoptedStyleSheets = [...document.adoptedStyleSheets, injectSheet]
 }
 
-/** Makes the V2 layout track iframe blend into the acrylic background. */
-function applyV2FrameStyles(frame: HTMLIFrameElement): void {
+/**
+ * Styles the V2 layout track iframe and hooks its document for URL drops.
+ *
+ * Called on every load of the iframe: each load brings a fresh document, so
+ * the sheet and the drop listeners are per-document rather than duplicative.
+ */
+function onV2FrameLoad(frame: HTMLIFrameElement): void {
   const frameDocument = frame.contentDocument
   const frameWindow = frameDocument?.defaultView
   if (!frameDocument || !frameWindow) return
@@ -137,6 +142,8 @@ function applyV2FrameStyles(frame: HTMLIFrameElement): void {
   frameSheet.replaceSync("body{background-color:transparent}")
   frameDocument.adoptedStyleSheets.push(frameSheet)
   frame.style.backgroundColor = "transparent"
+
+  installIframeDropHandler(frameDocument)
 }
 
 /** Applies the frame styles on every load of the V2 layout iframe. */
@@ -146,14 +153,14 @@ function watchV2LayoutFrame(): void {
     (e) => {
       const { target } = e
       if (target instanceof HTMLIFrameElement && target.matches(V2_LAYOUT_FRAME_SELECTOR)) {
-        applyV2FrameStyles(target)
+        onV2FrameLoad(target)
       }
     },
     true
   )
 
   const frame = document.querySelector<HTMLIFrameElement>(V2_LAYOUT_FRAME_SELECTOR)
-  if (frame) applyV2FrameStyles(frame)
+  if (frame) onV2FrameLoad(frame)
 }
 
 /**

@@ -43,3 +43,21 @@ export function installDropUrlHandler(): void {
     console.warn("[sc-desktop] failed to hook drop dispatch:", e)
   }
 }
+
+/**
+ * Queues SoundCloud URLs dropped directly onto the crossfade iframe's
+ * document. While the iframe is shown it covers the page, so drops land in
+ * its document and never reach the jQuery-dispatched handlers of the outer
+ * app. Drags without a URL keep the browser's default behaviour.
+ */
+export function installIframeDropHandler(frameDocument: Document): void {
+  frameDocument.addEventListener("dragover", (e) => {
+    if (extractDroppedUrl(e)) e.preventDefault()
+  })
+  frameDocument.addEventListener("drop", (e) => {
+    const url = extractDroppedUrl(e)
+    if (!url) return
+    e.preventDefault()
+    void queueDroppedUrl(url)
+  })
+}

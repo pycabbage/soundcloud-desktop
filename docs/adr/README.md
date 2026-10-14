@@ -23,6 +23,7 @@ We use a Nyx-style lightweight format with four sections:
 | 0006 | [Like state driven through the vendor toggle collection](0006-like-state-via-toggle-collection.md) | accepted |
 | 0007 | [Windows thumbnail toolbar with procedurally drawn glyphs](0007-windows-thumbnail-toolbar.md) | accepted |
 | 0008 | [Sentry via two first-party SDKs with bundle-time configuration](0008-sentry-two-sdks-with-baked-in-config.md) | accepted |
+| 0009 | [Uncover the V2 layout iframe via the vendor's `crossfade-iframe-active` body class](0009-v2-iframe-uncovered-via-crossfade-body-class.md) | accepted |
 
 ## Conventions
 

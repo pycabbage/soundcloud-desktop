@@ -17,6 +17,16 @@ body {
   padding-bottom: 3rem;
 }
 
+/*
+ * While the crossfade (V2 layout) iframe is shown, the outer app renders
+ * nothing but the fixed header and player bar, and the iframe draws the page.
+ * #app would otherwise sit on top of the iframe and swallow its clicks, so it
+ * collapses to its content height.
+ */
+body.crossfade-iframe-active #app {
+  bottom: auto;
+}
+
 /* Offset the V2 layout track iframe by the titlebar height */
 iframe.webiIframe.webiIframeV2Layout {
   margin-top: calc(46px + var(--titlebar-height));
