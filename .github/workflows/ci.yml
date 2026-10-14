@@ -103,8 +103,14 @@ jobs:
           releaseName: 'SoundCloud desktop v__VERSION__'
           releaseBody: 'See the assets to download this version and install.'
           prerelease: ${{ contains(github.ref, '-beta') }}
+          releaseDraft: true
           updaterJsonPreferNsis: true
           args: ${{ matrix.args }}
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: gh release edit "${{ github.ref_name }}" --draft=false
       # After the build, so the uploaded map matches the shipped bundle.
       - name: Upload source maps to Sentry
         shell: bash
