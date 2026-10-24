@@ -23,7 +23,7 @@
     "@sentry/react": "^11.8.0",
     "@soundcloud-desktop/tauri-controls": "workspace:*",
     "@tailwindcss/postcss": "^4.3.3",
-    "@tauri-apps/api": "^2.12.1",
+    "@tauri-apps/api": "^2.12.4",
     "clsx": "^2.1.1",
     "postcss": "^8.5.9",
     "react": "^19.3.1",
